@@ -1,0 +1,2515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Mailgent</title>
+<!-- Markdown parser library -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<!-- Google Fonts (Inter) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface-2: #f1f3f4;
+    --border: #dadce0;
+    --text: #202124;
+    --text-2: #5f6368;
+    --primary: #1a73e8;
+    --primary-hover: #1557b0;
+    --primary-soft: #e8f0fe;
+    --success: #137333;
+    --danger: #c5221f;
+    --warning: #b06000;
+    --ai-accent: #a142f4;
+    --ai-accent-soft: #f3e8fd;
+    --shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+    --shadow-lg: 0 4px 16px 0 rgba(60,64,67,0.2);
+    --radius: 12px;
+    --ease: cubic-bezier(.4,0,.2,1);
+  }
+
+  /* Dark Theme Variables */
+  body.dark-theme {
+    --bg: #0f1011;
+    --surface: #17181c;
+    --surface-2: #202125;
+    --border: #2c2d30;
+    --text: #e8eaed;
+    --text-2: #9aa0a6;
+    --primary: #e8eaed; /* Off-white for sleek contrast */
+    --primary-hover: #ffffff;
+    --primary-soft: #282a2d;
+    --success: #81c995;
+    --danger: #f28b82;
+    --warning: #fdd663;
+    --ai-accent: #d7aefb;
+    --ai-accent-soft: #2d1f4d;
+    --shadow: 0 1px 3px rgba(0,0,0,0.5);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.7);
+  }
+
+  /* Style Overrides for Dark Mode User Bubble & Buttons */
+  body.dark-theme .msg.user .bubble {
+    background: #e3e3e3;
+    color: #131314;
+  }
+  body.dark-theme .btn-primary {
+    background: #e3e3e3;
+    color: #131314;
+  }
+  body.dark-theme .btn-primary:hover {
+    background: #ffffff;
+  }
+  body.dark-theme .btn-danger:hover {
+    background: #3c2424;
+  }
+  body.dark-theme .progress-fill {
+    background: #8ab4f8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.3s var(--ease), color 0.3s var(--ease);
+  }
+  button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+  input, textarea, select { font-family: inherit; color: inherit; border: none; outline: none; background: transparent; }
+
+  /* Split-screen desktop layout with sidebars */
+  .app-container {
+    display: flex;
+    height: 100dvh;
+    width: 100vw;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg);
+  }
+
+  /* Responsive Sidebar Drawer */
+  .sidebar {
+    width: 250px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    z-index: 30;
+    transition: transform 0.3s var(--ease), background 0.3s var(--ease), border-color 0.3s var(--ease);
+  }
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding: 4px;
+  }
+  .sidebar-title {
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .sidebar-close {
+    display: none;
+  }
+  .sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-2);
+    transition: background 0.2s var(--ease), color 0.2s var(--ease);
+    width: 100%;
+    text-align: left;
+  }
+  .sidebar-item:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .sidebar-item.active {
+    background: var(--primary-soft);
+    color: var(--text);
+  }
+  .sidebar-footer {
+    padding: 12px 4px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-2);
+    word-break: break-all;
+  }
+  .sidebar-overlay-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 29;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s var(--ease);
+  }
+  .sidebar-overlay-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Main frame styling */
+  .app {
+    flex: 1;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s var(--ease);
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .sidebar-close {
+      display: flex;
+    }
+  }
+
+  /* Header area */
+  .header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    z-index: 5;
+  }
+  .header-spacer { flex: 1; }
+  .model-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--surface-2);
+    border-radius: 999px;
+    font-size: 12px;
+    transition: background 0.2s var(--ease);
+  }
+  .model-pill:active { transform: scale(.96); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s var(--ease), transform 0.15s var(--ease);
+  }
+  .icon-btn:hover { background: var(--surface-2); }
+  .icon-btn:active { transform: scale(.92); }
+  .icon { width: 20px; height: 20px; color: var(--text-2); }
+
+  /* Main viewport scroll area */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px 16px 16px;
+    scroll-behavior: smooth;
+  }
+  .main::-webkit-scrollbar { width: 6px; }
+  .main::-webkit-scrollbar-thumb { background: #dadce0; border-radius: 3px; }
+
+  /* Welcome Screen Overlay / Landing Screen Redesign */
+  .welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 24px;
+    animation: fadeUp 0.6s var(--ease);
+  }
+  .welcome h2 { font-size: 24px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+  .welcome p { color: var(--text-2); font-size: 14px; line-height: 1.5; max-width: 360px; margin-bottom: 20px; }
+
+  /* Suggestion Chips */
+  .suggestion-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 340px;
+    margin-top: 16px;
+    animation: fadeUp 0.5s var(--ease);
+  }
+  .suggestion-chip {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+    color: var(--text);
+    transition: all 0.2s var(--ease);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .suggestion-chip:hover {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+  }
+
+  /* Chat Bubbles */
+  .msg { max-width: 85%; margin-bottom: 14px; animation: pop 0.35s var(--ease); }
+  .msg.user { align-self: flex-end; margin-left: auto; }
+  .msg.ai { align-self: flex-start; margin-right: auto; width: 100%; }
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 18px;
+    line-height: 1.45;
+    word-wrap: break-word;
+  }
+  .msg.user .bubble { background: var(--primary); color: white; border-bottom-right-radius: 6px; }
+  .msg.ai .bubble {
+    background: var(--surface-2);
+    color: var(--text);
+    border-bottom-left-radius: 6px;
+    white-space: normal;
+  }
+  .msg.ai .bubble p { margin-bottom: 8px; }
+  .msg.ai .bubble p:last-child { margin-bottom: 0; }
+  .msg.ai .bubble ul, .msg.ai .bubble ol { margin-left: 20px; margin-bottom: 8px; padding-left: 0; }
+  .msg.ai .bubble li { margin-bottom: 4px; }
+  .msg.ai .bubble strong { font-weight: 600; }
+  .msg.ai .bubble code {
+    background: var(--bg);
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px;
+  }
+  .msg.ai .bubble pre {
+    background: var(--bg);
+    padding: 10px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 8px 0;
+  }
+
+  /* Grammar Highlighter */
+  .grammar-highlight {
+    border-bottom: 2px dashed var(--danger);
+    cursor: help;
+    background: rgba(197, 34, 31, 0.1);
+  }
+
+  /* Composer box */
+  .composer {
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    transition: transform 0.35s var(--ease);
+  }
+  .composer-inner {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    background: var(--surface-2);
+    border-radius: 24px;
+    padding: 6px 6px 6px 14px;
+    transition: all 0.2s var(--ease);
+    border: 1.5px solid transparent;
+  }
+  .composer-inner:focus-within {
+    background: var(--surface);
+    border-color: var(--primary);
+  }
+  .composer textarea {
+    flex: 1;
+    resize: none;
+    max-height: 120px;
+    min-height: 24px;
+    line-height: 1.4;
+    padding: 7px 4px;
+    font-size: 15px;
+  }
+  .send-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s var(--ease), opacity 0.2s var(--ease);
+    flex-shrink: 0;
+  }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .send-btn svg { width: 18px; height: 18px; }
+
+  /* Sign-in Overlay redesign */
+  .signin-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+  }
+  .signin-overlay.hidden { display: none; }
+  .signin-btn {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: var(--shadow);
+    transition: all 0.15s var(--ease);
+    margin-top: 24px;
+    color: #202124;
+  }
+  .signin-btn:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+
+  /* Settings Organized Tabs */
+  .settings-container {
+    padding: 4px 0 20px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    animation: fadeUp 0.5s var(--ease);
+  }
+  .settings-tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+    padding-bottom: 4px;
+    overflow-x: auto;
+  }
+  .settings-tab {
+    padding: 8px 14px;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--text-2);
+    border-radius: 8px;
+    transition: all 0.2s var(--ease);
+    white-space: nowrap;
+  }
+  .settings-tab:hover { background: var(--surface-2); color: var(--text); }
+  .settings-tab.active { background: var(--primary-soft); color: var(--text); }
+
+  .settings-panel { display: none; }
+  .settings-panel.active { display: block; }
+
+  /* Config Card & Panels */
+  .draft-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 8px;
+    box-shadow: var(--shadow);
+    animation: pop 0.35s var(--ease);
+  }
+  .draft-field { display: flex; gap: 8px; padding: 6px 0; font-size: 13px; }
+  .draft-field .label { color: var(--text-2); min-width: 72px; font-weight: 500; }
+  .draft-body {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    line-height: 1.55;
+    white-space: pre-wrap;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+  .draft-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .btn {
+    padding: 9px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s var(--ease);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn-primary { background: var(--primary); color: white; box-shadow: var(--shadow); }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-ghost { background: transparent; color: var(--text-2); }
+  .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+  .btn-danger { background: transparent; color: var(--danger); }
+  .btn-danger:hover { background: #fce8e6; }
+
+  /* Inline edit buttons */
+  .inline-edit-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-2);
+    transition: all 0.2s var(--ease);
+  }
+  .inline-edit-btn:hover { background: var(--surface-2); color: var(--text); }
+
+  /* Empty state */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+    animation: fadeUp 0.5s var(--ease);
+    height: 100%;
+  }
+  .empty-icon {
+    width: 64px; height: 64px; border-radius: 50%; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: var(--text-2);
+  }
+  .empty-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  .empty-desc { font-size: 13px; color: var(--text-2); max-width: 280px; line-height: 1.5; margin-bottom: 16px; }
+
+  /* Toast */
+  .toast {
+    position: absolute;
+    left: 50%;
+    bottom: 90px;
+    transform: translateX(-50%) translateY(20px);
+    background: #3c4043;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 22px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s var(--ease);
+    z-index: 150;
+    white-space: nowrap;
+    box-shadow: var(--shadow-lg);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Thinking process unified log */
+  .think-panel {
+    margin-top: 8px; background: var(--surface-2); border-radius: 14px; padding: 12px;
+    max-height: 200px; overflow-y: auto; font-size: 11.5px; color: var(--text-2);
+    line-height: 1.5; font-family: ui-monospace, SFMono-Regular, monospace;
+    white-space: pre-wrap; background: var(--bg); padding: 10px; border-radius: 8px;
+  }
+
+  /* Keyframe animations */
+  @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Onboarding wizard popup styling */
+  .wizard-backdrop {
+    position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 100;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s var(--ease);
+  }
+  .wizard-backdrop.open { opacity: 1; pointer-events: auto; }
+  .wizard {
+    background: var(--surface); border-radius: 20px; width: 100%; max-width: 480px;
+    box-shadow: var(--shadow-lg); overflow: hidden; display: flex; flex-direction: column;
+    transform: scale(0.92) translateY(20px); opacity: 0; transition: all 0.4s var(--ease);
+  }
+  .wizard-backdrop.open .wizard { transform: scale(1) translateY(0); opacity: 1; }
+  .wizard-header { padding: 24px 24px 12px; border-bottom: 1px solid var(--border); }
+  .wizard-title { font-size: 18px; font-weight: 600; color: var(--text); }
+  .wizard-desc { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+  .wizard-body { padding: 20px 24px; flex: 1; max-height: 350px; overflow-y: auto; }
+  .wizard-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg); }
+  
+  /* Audit Log Rows */
+  .audit-row {
+    padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12.5px;
+    display: flex; align-items: center; gap: 10px; color: var(--text);
+  }
+  .audit-time { color: var(--text-2); font-family: ui-monospace, monospace; font-size: 11px; min-width: 64px; }
+  .audit-tag { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+  .audit-tag.create { background: #e8f0fe; color: #1a73e8; }
+  .audit-tag.send { background: #e6f4ea; color: #137333; }
+  .audit-tag.warn { background: #fef7e0; color: #b06000; }
+  .audit-tag.error { background: #fce8e6; color: #c5221f; }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- Collapsible Left Sidebar Navigation Drawer -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Mailgent</span>
+      <button class="icon-btn sidebar-close" id="sidebarCloseBtn" style="color:var(--text-2);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    
+    <div class="sidebar-menu">
+      <button class="sidebar-item active" data-view="chat">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Chat Assistant</span>
+      </button>
+      <button class="sidebar-item" data-view="inbox">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <span>Inbox Triage</span>
+      </button>
+      <button class="sidebar-item" data-view="followups">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <span>Smart Follow-Ups</span>
+      </button>
+      <button class="sidebar-item" data-view="templates">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>Quick Templates</span>
+      </button>
+      <button class="sidebar-item" data-view="logs">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/><line x1="10" y1="18" x2="16" y2="18"/></svg>
+        <span>Security Audit Log</span>
+      </button>
+      <button class="sidebar-item" data-view="settings">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </button>
+    </div>
+    
+    <div style="flex:1"></div>
+    
+    <div class="sidebar-footer" id="sidebarUserEmail">Not signed in</div>
+  </div>
+  
+  <div class="sidebar-overlay-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- Main View Container -->
+  <div class="app" id="app">
+
+    <!-- Sign-in overlay -->
+    <div class="signin-overlay" id="signinOverlay">
+      <div class="welcome-logo" style="width:64px;height:64px;border-radius:16px;background:#343a40;display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:var(--shadow);">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+          <path d="M3 7l9 6 9-6M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7l2-2h14l2 2" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 style="font-weight:600;font-size:24px;margin-bottom:8px">Mailgent</h2>
+      <p style="color:var(--text-2);max-width:320px;line-height:1.5;font-size:13.5px">Your AI email agent for smarter drafting, triage, and follow-ups. Connect Gmail to review AI-generated drafts safely before sending.</p>
+      
+      <div style="margin-top: 16px; font-size:12.5px; color:var(--text-2); text-align:left; background:var(--surface-2); padding:12px; border-radius:12px; max-width:300px; line-height:1.4;">
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Human approval by default</div>
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Secure Google OAuth login</div>
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> No auto-sends without review</div>
+        <div style="display:flex; align-items:center; gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Disconnect or sign out anytime</div>
+      </div>
+
+      <button class="signin-btn" id="signinBtn">
+        <svg width="20" height="20" viewBox="0 0 48 48">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+          <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.1 35 26.7 36 24 36c-5.3 0-9.7-3.4-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.6l6.2 5.2c-.4.4 6.7-4.9 6.7-14.8 0-1.3-.1-2.4-.4-3.5z"/>
+        </svg>
+        Connect Gmail Account
+      </button>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <button class="icon-btn" id="menuBtn" aria-label="Menu" title="Menu">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="clearBtn" aria-label="Clear conversation" title="Clear conversation">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+      </button>
+      <span class="header-spacer" aria-hidden="true"></span>
+      <button class="model-pill" id="modelPill">
+        <span class="dot"></span>
+        <span id="modelLabel">Everyday (Gemini 2.5 Flash)</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <button class="icon-btn" id="themeBtn" aria-label="Toggle theme" title="Toggle theme">
+        <svg class="icon sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg class="icon moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Main viewport view area -->
+    <div class="main" id="main">
+      <div class="welcome" id="welcome">
+        <h2>Compose with AI</h2>
+        <p>Tell me the subject of the email and who it's for. I'll draft it, you approve, then I send it.</p>
+      </div>
+    </div>
+
+    <!-- Composer -->
+    <div class="composer">
+      <div class="composer-inner">
+        <textarea id="input" rows="1" placeholder="Ask Mailgent to draft an email..."></textarea>
+        <button class="send-btn" id="sendBtn" aria-label="Send" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Model switcher sheet -->
+    <div class="sheet-backdrop" id="sheetBackdrop"></div>
+    <div class="sheet" id="sheet">
+      <div class="sheet-handle"></div>
+      <h3>Choose an AI engine</h3>
+      <button class="opt active" data-model="gemini-2.5-flash">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--ai-accent)" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+        <div class="opt-info">
+          <div class="opt-title" style="font-weight:600">Everyday (Fast & Responsive)</div>
+          <div class="opt-desc">Fast drafts for normal email routines. Powered by Gemini 2.5 Flash.</div>
+        </div>
+        <svg class="opt-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+      <button class="opt" data-model="gemini-3-flash">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--ai-accent)" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <div class="opt-info">
+          <div class="opt-title" style="font-weight:600">Deep Thinking (Reasoning & Grounding)</div>
+          <div class="opt-desc">Complex threads, scheduling, deep research. Powered by Gemini 3 Flash.</div>
+        </div>
+        <svg class="opt-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+
+    <!-- ONBOARDING WIZARD OVERLAY -->
+    <div class="wizard-backdrop" id="wizardBackdrop">
+      <div class="wizard">
+        <div class="wizard-header">
+          <div class="wizard-title" id="wizTitle">Onboarding Setup</div>
+          <div class="wizard-desc" id="wizDesc">Configure your Mailgent experience</div>
+        </div>
+        <div class="wizard-body" id="wizBody">
+          <!-- Step contents injected here dynamically -->
+        </div>
+        <div class="wizard-footer">
+          <button class="btn btn-ghost" id="wizPrevBtn">Back</button>
+          <button class="btn btn-primary" id="wizNextBtn">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// LOCAL STORAGE DATA SCHEMAS
+// ============================================================
+const LS_KEY = 'mail_composer_config_v1';
+const HISTORY_KEY = 'mailgent_chathistory_v1';
+const AUDIT_KEY = 'mailgent_auditlogs_v1';
+const TEMPLATES_KEY = 'mailgent_templates_v1';
+const SCOPES = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/contacts.readonly';
+const DEFAULT_CLIENT_ID = '566861523335-8h2aej3l0hl7494q6r1qa011krf11hhr.apps.googleusercontent.com';
+
+function loadConfig() {
+  try {
+    const c = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+    if (!c.GOOGLE_CLIENT_ID) c.GOOGLE_CLIENT_ID = DEFAULT_CLIENT_ID;
+    return c;
+  } catch {
+    return { GOOGLE_CLIENT_ID: DEFAULT_CLIENT_ID };
+  }
+}
+function saveConfig(cfg) {
+  localStorage.setItem(LS_KEY, JSON.stringify(cfg));
+}
+function getConfig() {
+  const c = loadConfig();
+  return {
+    GOOGLE_CLIENT_ID: c.GOOGLE_CLIENT_ID || DEFAULT_CLIENT_ID,
+    GEMINI_API_KEY:   c.GEMINI_API_KEY   || '',
+    AI_API_URL:       c.AI_API_URL       || '',
+    SYSTEM_DIRECTIVE: c.SYSTEM_DIRECTIVE || '',
+    EMAIL_SIGNATURE:  c.EMAIL_SIGNATURE  || '',
+    TEMPERATURE:      c.TEMPERATURE !== undefined ? c.TEMPERATURE : 0.8,
+    MAX_TOKENS:       c.MAX_TOKENS || 2048,
+    THINKING_BUDGET:  c.THINKING_BUDGET || 10240,
+    WEB_GROUNDING:    c.WEB_GROUNDING !== undefined ? c.WEB_GROUNDING : true,
+    APPROVAL_LEVEL:   c.APPROVAL_LEVEL || '2', // Level 1: Suggest only, Level 2: Draft + Approve
+    DEFAULT_TONE:     c.DEFAULT_TONE || 'Professional', // Professional, Friendly, Concise, Executive
+    valid: !!((c.GOOGLE_CLIENT_ID || DEFAULT_CLIENT_ID) && (c.AI_API_URL || c.GEMINI_API_KEY))
+  };
+}
+
+function loadChatHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveChatHistory(history) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+function loadAuditLogs() {
+  try { return JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveAuditLogs(logs) {
+  localStorage.setItem(AUDIT_KEY, JSON.stringify(logs));
+}
+function logAuditEvent(type, message) {
+  const logs = loadAuditLogs();
+  const event = {
+    timestamp: new Date().toLocaleTimeString(),
+    type: type, // 'create' | 'send' | 'warn' | 'error'
+    message: message
+  };
+  logs.unshift(event);
+  saveAuditLogs(logs.slice(0, 100)); // Limit to last 100 entries
+}
+
+function loadTemplates() {
+  const defaults = [
+    {
+      title: "📱 Request free phone/sponsorship",
+      desc: "Inquire phone brands about sponsorship opportunities for computer science studies.",
+      prompt: "Draft an email to 10 phone companies asking for a free phone or sponsorship. Mention my name is Sagar Poudel, 17 years old, from Nepal, studying in class 11 computer science."
+    },
+    {
+      title: "💻 CS Course study resource inquiry",
+      desc: "Polite inquiry to online schools or communities requesting study resources.",
+      prompt: "Write an email to a Computer Science community or professor inquiring about study resources, free courses, or sponsorships for a Class 11 student in Nepal studying CS."
+    },
+    {
+      title: "🏢 Internship Application",
+      desc: "Polite cover letter applying for junior IT internships.",
+      prompt: "Draft a formal application email for a part-time junior developer or IT support internship. Mention I am a motivated 11th-grade computer science student."
+    }
+  ];
+  try {
+    const list = localStorage.getItem(TEMPLATES_KEY);
+    if (!list) {
+      localStorage.setItem(TEMPLATES_KEY, JSON.stringify(defaults));
+      return defaults;
+    }
+    return JSON.parse(list);
+  } catch {
+    return defaults;
+  }
+}
+function saveTemplates(templates) {
+  localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+}
+
+// ============================================================
+// GLOBAL STATE MANAGEMENT
+// ============================================================
+const MODEL_LABEL = {
+  'gemini-2.5-flash': 'Everyday (Gemini 2.5 Flash)',
+  'gemini-3-flash':   'Deep Thinking (Gemini 3 Flash)'
+};
+const MODEL_ID = {
+  'gemini-2.5-flash': 'gemini-2.5-flash',
+  'gemini-3-flash':   'gemini-3-flash-preview'
+};
+
+let state = {
+  signedIn: false,
+  accessToken: null,
+  userEmail: null,
+  model: 'gemini-2.5-flash',
+  stage: 'idle',
+  draft: null,
+  activeView: 'chat',
+  abortController: null,
+  chatHistory: loadChatHistory()
+};
+
+const $ = id => document.getElementById(id);
+const main = $('main');
+const input = $('input');
+const sendBtn = $('sendBtn');
+
+// ============================================================
+// APP ONBOARDING SETUP WIZARD
+// ============================================================
+let onboardingStep = 0;
+const wizardBackdrop = $('wizardBackdrop');
+
+const wizardSteps = [
+  {
+    title: "Step 1: Welcome to Mailgent!",
+    desc: "Connect your Google/Gmail account to begin drafting emails with smart context clues.",
+    render: () => `
+      <div style="text-align:center; padding:10px 0;">
+        <p style="color:var(--text-2); font-size:13.5px; line-height:1.5; margin-bottom:16px;">Mailgent is your autonomous AI assistant. It parses email attachments, detects missing links, flags security scams, and suggests follow-ups.</p>
+        <div style="font-size:12.5px; text-align:left; background:var(--bg); padding:12px; border-radius:8px; line-height:1.4;">
+          <div style="margin-bottom:6px;"><b>🛡️ Secure Google Authorization:</b> We utilize standard Google scopes. Mailgent strictly reviews drafts and sends ONLY upon your manual click.</div>
+        </div>
+      </div>
+    `
+  },
+  {
+    title: "Step 2: Choose Your AI Tone Persona",
+    desc: "Help Mailgent align automatically with your writing personality.",
+    render: () => `
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <label class="field-label">Preferred Tone Preset</label>
+        <select class="field-input" id="wizTone" style="background:var(--surface-2); padding:10px; border-radius:8px;">
+          <option value="Professional" selected>👔 Professional (Formal, respectful, direct)</option>
+          <option value="Friendly">☕ Friendly (Warm, helpful, conversational)</option>
+          <option value="Concise">✂️ Concise (Very short sentences, high impact)</option>
+          <option value="Executive">💼 Executive (Strategic, crisp, high-level)</option>
+        </select>
+        <div style="margin-top:10px;">
+          <label class="field-label">Custom System Directives</label>
+          <textarea class="field-input" id="wizDirectives" rows="2" style="background:var(--surface-2); padding:10px; border-radius:8px; width:100%; resize:none;" placeholder="e.g. Always write as a 17-year-old student from Kathmandu, Nepal, studying Class 11 CS."></textarea>
+        </div>
+      </div>
+    `
+  },
+  {
+    title: "Step 3: Setup Email Signature",
+    desc: "Store your custom HTML or text signature to auto-append to outgoing emails.",
+    render: () => `
+      <div>
+        <label class="field-label">HTML Email Signature</label>
+        <textarea class="field-input" id="wizSignature" rows="4" style="background:var(--surface-2); padding:10px; border-radius:8px; width:100%; font-family:monospace; resize:none;" placeholder="e.g. <p>Sincerely,<br><b>Sagar Poudel</b><br>Kathmandu, Nepal</p>"></textarea>
+        <div class="field-hint" style="margin-top:6px;">This signature block will automatically append to outgoing mail payloads.</div>
+      </div>
+    `
+  },
+  {
+    title: "Step 4: AI Autonomy & Approvals",
+    desc: "Decide the level of control and security alerts.",
+    render: () => `
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div>
+          <label class="field-label">Approval Preference Level</label>
+          <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+              <input type="radio" name="wizAuth" value="1"> <span><b>Level 1: Suggest only</b> (Proposes email texts, does nothing else)</span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+              <input type="radio" name="wizAuth" value="2" checked> <span><b>Level 2: Draft + Approve</b> (Creates drafts and holds for click)</span>
+            </label>
+          </div>
+        </div>
+        <div style="background:var(--success)0b; border:1px solid var(--success); padding:10px; border-radius:8px; font-size:12px; color:var(--success); line-height:1.4; display:flex; align-items:center; gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          Sensitive content detection will scan drafts for legal, passwords, and wire instructions.
+        </div>
+      </div>
+    `
+  }
+];
+
+function showOnboardingWizard() {
+  if (localStorage.getItem('mailgent_onboarding_wizard_v1') === 'true') return;
+  onboardingStep = 0;
+  renderWizardStep();
+  wizardBackdrop.classList.add('open');
+}
+function closeOnboardingWizard() {
+  wizardBackdrop.classList.remove('open');
+}
+
+function renderWizardStep() {
+  const step = wizardSteps[onboardingStep];
+  $('wizTitle').textContent = step.title;
+  $('wizDesc').textContent = step.desc;
+  $('wizBody').innerHTML = step.render();
+
+  $('wizPrevBtn').style.visibility = onboardingStep === 0 ? 'hidden' : 'visible';
+  $('wizNextBtn').textContent = onboardingStep === wizardSteps.length - 1 ? 'Save & Start' : 'Next';
+
+  if (onboardingStep === 1) {
+    const cfg = getConfig();
+    $('wizTone').value = cfg.DEFAULT_TONE || 'Professional';
+    $('wizDirectives').value = cfg.SYSTEM_DIRECTIVE || 'Always write as a 17-year-old student from Kathmandu, Nepal, studying Class 11 CS.';
+  } else if (onboardingStep === 2) {
+    const cfg = getConfig();
+    $('wizSignature').value = cfg.EMAIL_SIGNATURE || '<p>Sincerely,<br><b>Sagar Poudel</b><br>Class 11 Computer Science Student<br>Kathmandu, Nepal</p>';
+  }
+}
+
+$('wizNextBtn').addEventListener('click', () => {
+  if (onboardingStep === 1) {
+    const cfg = loadConfig();
+    cfg.DEFAULT_TONE = $('wizTone').value;
+    cfg.SYSTEM_DIRECTIVE = $('wizDirectives').value.trim();
+    saveConfig(cfg);
+  } else if (onboardingStep === 2) {
+    const cfg = loadConfig();
+    cfg.EMAIL_SIGNATURE = $('wizSignature').value.trim();
+    saveConfig(cfg);
+  } else if (onboardingStep === 3) {
+    const cfg = loadConfig();
+    const checkedRadio = document.querySelector('input[name="wizAuth"]:checked');
+    cfg.APPROVAL_LEVEL = checkedRadio ? checkedRadio.value : '2';
+    saveConfig(cfg);
+  }
+
+  if (onboardingStep < wizardSteps.length - 1) {
+    onboardingStep++;
+    renderWizardStep();
+  } else {
+    localStorage.setItem('mailgent_onboarding_wizard_v1', 'true');
+    closeOnboardingWizard();
+    toast('Onboarding completed! Welcome to Mailgent!');
+    logAuditEvent('create', 'Completed initial onboarding setup wizard.');
+    setTimeout(startTutorial, 400);
+  }
+});
+
+$('wizPrevBtn').addEventListener('click', () => {
+  if (onboardingStep > 0) {
+    onboardingStep--;
+    renderWizardStep();
+  }
+});
+
+// ============================================================
+// SYSTEM TUTORIAL STEPS
+// ============================================================
+function startTutorial() {
+  if (localStorage.getItem('mailgent_tutorial_completed') === 'true') return;
+  
+  const steps = [
+    {
+      element: 'menuBtn',
+      title: "📐 Collapsible Sidebar Menu",
+      text: "Toggle seamlessly between Chat Assistant, Inbox Triage, Smart Follow-Ups, and Security Logs!"
+    },
+    {
+      element: 'modelPill',
+      title: "🤖 Choose Your AI Model",
+      text: "Switch between Everyday drafts (Gemini 2.5) and Deep Thinking (Gemini 3) reasoning options."
+    },
+    {
+      element: 'themeBtn',
+      title: "🌓 Neutral Dark Theme",
+      text: "Toggle themes cleanly. Silver high-contrast button overrides, absolutely zero blue borders!"
+    },
+    {
+      element: 'clearBtn',
+      title: "🗑️ Clear Conversations",
+      text: "Reset your local conversational cache logs instantly to begin a fresh email task."
+    },
+    {
+      element: 'input',
+      title: "💬 Smart Prompt Composer",
+      text: "Describe your emails, upload files, summarize inbox replies, or audit scams from this panel."
+    }
+  ];
+
+  let currentStep = 0;
+
+  function renderStep(idx) {
+    const oldBubble = $('tutorialBubble');
+    if (oldBubble) oldBubble.remove();
+
+    if (idx >= steps.length) {
+      localStorage.setItem('mailgent_tutorial_completed', 'true');
+      toast('Tutorial completed! Enjoy Mailgent!');
+      return;
+    }
+
+    const step = steps[idx];
+    const target = $(step.element);
+    if (!target) {
+      renderStep(idx + 1);
+      return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const isMobile = window.innerWidth <= 600;
+    const isBottomHalf = rect.top > window.innerHeight / 2;
+
+    const bubble = document.createElement('div');
+    bubble.id = 'tutorialBubble';
+    
+    let positionStyles = '';
+    if (isMobile) {
+      if (isBottomHalf) {
+        positionStyles = `bottom: ${window.innerHeight - rect.top + 10}px; left: 16px; right: 16px; width: auto;`;
+      } else {
+        positionStyles = `top: ${rect.bottom + 10}px; left: 16px; right: 16px; width: auto;`;
+      }
+    } else {
+      const leftPos = Math.max(10, Math.min(window.innerWidth - 290, rect.left + rect.width/2 - 140));
+      if (isBottomHalf) {
+        positionStyles = `bottom: ${window.innerHeight - rect.top + 10}px; left: ${leftPos}px; width: 280px;`;
+      } else {
+        positionStyles = `top: ${rect.bottom + 10}px; left: ${leftPos}px; width: 280px;`;
+      }
+    }
+
+    bubble.style.cssText = `
+      position: absolute;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-lg);
+      border-radius: 16px;
+      padding: 16px;
+      z-index: 200;
+      animation: pop 0.3s var(--ease);
+      ${positionStyles}
+    `;
+
+    bubble.innerHTML = `
+      <h4 style="font-size:14px; font-weight:bold; margin-bottom:6px; display:flex; align-items:center; gap:6px; color:var(--text);">${step.title}</h4>
+      <p style="font-size:12.5px; color:var(--text-2); line-height:1.4; margin-bottom:12px;">${step.text}</p>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:11px; color:var(--text-2);">${idx + 1} of ${steps.length}</span>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-ghost" onclick="skipTutorial()" style="padding:4px 8px; font-size:12px;">Skip</button>
+          <button class="btn btn-primary" onclick="nextTutorialStep()" style="padding:6px 12px; font-size:12px; border-radius:8px;">Next</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(bubble);
+  }
+
+  window.nextTutorialStep = function() {
+    currentStep++;
+    renderStep(currentStep);
+  };
+
+  window.skipTutorial = function() {
+    localStorage.setItem('mailgent_tutorial_completed', 'true');
+    const oldBubble = $('tutorialBubble');
+    if (oldBubble) oldBubble.remove();
+    toast('Tutorial skipped');
+  };
+
+  renderStep(0);
+}
+
+// ============================================================
+// SIGN-IN CONSTRAINTS & SECURE OAUTH
+// ============================================================
+function doSignIn() {
+  const cfg = getConfig();
+  if (!cfg.valid) {
+    state._pendingSignIn = true;
+    openConfigModalFromOnboarding();
+    return;
+  }
+  signIn().catch(err => {
+    console.error(err);
+    toast('Sign-in failed: ' + (err.message || err.error || 'unknown'));
+    logAuditEvent('error', 'Google OAuth sign-in failure: ' + (err.message || 'unknown'));
+  });
+}
+
+function openConfigModalFromOnboarding() {
+  switchView('settings');
+  toast('Please set up your local Gemini API Key to enable AI drafting capabilities.');
+}
+
+async function signIn({ silent = false } = {}) {
+  const cfg = getConfig();
+  await loadGis();
+  await loadGapi();
+  await gapi.client.init({});
+  const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: cfg.GOOGLE_CLIENT_ID,
+    scope: SCOPES,
+    callback: ''
+  });
+  return new Promise((resolve, reject) => {
+    tokenClient.callback = async (resp) => {
+      if (resp.error) return reject(resp);
+      state.accessToken = resp.access_token;
+      gapi.client.setToken({ access_token: resp.access_token });
+      try {
+        const profile = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+          headers: { Authorization: 'Bearer ' + resp.access_token }
+        }).then(r => r.json());
+        state.userEmail = profile.emailAddress;
+        state.signedIn = true;
+        $('signinOverlay').classList.add('hidden');
+        $('signOutBtn').style.display = 'flex';
+        $('accountInfo').textContent = profile.emailAddress;
+        $('sidebarUserEmail').textContent = profile.emailAddress;
+        
+        removeLandingPageMiddleText(); // Clean up landing page text on login
+        
+        if (state.chatHistory && state.chatHistory.length > 0) {
+          switchView('chat');
+        }
+        
+        logAuditEvent('send', `Google Gmail Account connected successfully for: ${profile.emailAddress}`);
+        
+        // Show onboarding setup if fresh installation
+        setTimeout(showOnboardingWizard, 600);
+        resolve();
+      } catch (e) { reject(e); }
+    };
+    tokenClient.requestAccessToken({ prompt: silent ? '' : 'consent' });
+  });
+}
+
+function performSignOut() {
+  const tokenToRevoke = state.accessToken;
+  state.signedIn = false;
+  state.accessToken = null;
+  state.userEmail = null;
+  if (window.gapi && gapi.client) gapi.client.setToken(null);
+  if (tokenToRevoke && window.google && google.accounts && google.accounts.oauth2) {
+    try { google.accounts.oauth2.revoke(tokenToRevoke, () => {}); } catch {}
+  }
+  $('signinOverlay').classList.remove('hidden');
+  $('accountInfo').textContent = 'Not signed in';
+  $('sidebarUserEmail').textContent = 'Not signed in';
+  toast('Signed out successfully.');
+  logAuditEvent('warn', 'Gmail connection disconnected and signed out.');
+}
+
+// ============================================================
+// GMAIL INTEGRATION RETRIEVAL
+// ============================================================
+async function gmailRawSend(to, subject, body) {
+  const cfg = getConfig();
+  const signature = cfg.EMAIL_SIGNATURE || '';
+  
+  // Strict cleanup constraints
+  let cleanedBody = body.replace(/—/g, '-').replace(/--/g, '-');
+  let cleanedSubject = subject.replace(/—/g, '-').replace(/--/g, '-');
+  
+  const bodyHtml = escapeHtml(cleanedBody).replace(/\n/g, '<br>');
+  let finalBodyHtml = bodyHtml;
+  
+  if (signature) {
+    const cleanedSig = signature.replace(/—/g, '-').replace(/--/g, '-');
+    finalBodyHtml += `<br><br><div class="mailgent-signature" style="margin-top:20px; border-top:1px solid #e0e0e0; padding-top:12px; color:#5f6368; font-size:12.5px;">${cleanedSig}</div>`;
+  }
+
+  const headers = [
+    `To: ${to}`,
+    `Subject: ${encodeSubject(cleanedSubject)}`,
+    `Content-Type: text/html; charset="UTF-8"`,
+    `MIME-Version: 1.0`
+  ];
+  const raw = headers.join('\r\n') + '\r\n\r\n' + finalBodyHtml;
+  const encoded = btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ raw: encoded })
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  logAuditEvent('send', `Email safely sent to: ${to} (Subject: ${cleanedSubject})`);
+  return res.json();
+}
+function encodeSubject(s){
+  if (/^[\x20-\x7e]*$/.test(s)) return s;
+  return '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(s))) + '?=';
+}
+
+async function getRecentEmails(maxResults = 10, folder = 'INBOX') {
+  if (!state.accessToken) {
+    // Return mock data for testing sandbox features if no connected profile
+    return getMockInboxData().slice(0, maxResults);
+  }
+  
+  let url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}`;
+  if (folder === 'SENT') {
+    url += `&q=is:sent`;
+  } else {
+    url += `&labelIds=INBOX`;
+  }
+
+  const list = await fetch(url, {
+    headers: { Authorization: 'Bearer ' + state.accessToken }
+  });
+  if (!list.ok) throw new Error(`Gmail ${list.status}: ${await list.text()}`);
+  const data = await list.json();
+  const messages = [];
+  for (const item of (data.messages || []).slice(0, maxResults)) {
+    const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${item.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Date`, {
+      headers: { Authorization: 'Bearer ' + state.accessToken }
+    });
+    if (!res.ok) continue;
+    const msg = await res.json();
+    const headers = {};
+    (msg.payload?.headers || []).forEach(h => {
+      headers[h.name.toLowerCase()] = h.value;
+    });
+    messages.push({
+      id: item.id,
+      from: headers.from || '',
+      to: headers.to || '',
+      subject: headers.subject || '(no subject)',
+      date: headers.date || '',
+      snippet: msg.snippet || ''
+    });
+  }
+  return messages;
+}
+
+function getMockInboxData() {
+  return [
+    { id: "mock_1", from: "T-Mobile Support <access@t-mobile.com>", subject: "Accessibility Services Inquiry Support", date: "August 3, 2026", snippet: "Hi Sagar, thank you for reaching out regarding mobile accessibility and our class study sponsor program details." },
+    { id: "mock_2", from: "Michael Scott <mscott@dundermifflin.com>", subject: "Status on pending Q1 Invoice payment", date: "August 1, 2026", snippet: "Hi, I wanted to check if you received the invoice attachment and if everything looks attached." },
+    { id: "mock_3", from: "US Mobile Help <help@usmobile.com>", subject: "Re: Nepal Student Program laptop grant", date: "July 28, 2026", snippet: "Dear Sagar, our support team has received your sponsorship request letter. We require an uploaded PDF CS Class certificate." }
+  ];
+}
+
+// ============================================================
+// GEMINI MULTIMODAL CAPABILITIES & INLINE DATA
+// ============================================================
+async function callGeminiStream(prompt, onChunk, onThought, signal) {
+  const cfg = getConfig();
+  const modelId = MODEL_ID[state.model] || 'gemini-2.5-flash';
+  
+  const systemInstructionText = cfg.SYSTEM_DIRECTIVE 
+    ? `${cfg.SYSTEM_DIRECTIVE}\n\nGeneral instructions: You are Mailgent, a practical email and web research assistant. You can use Google Search and URL context. NEVER use em dashes (— or --) inside your responses.`
+    : `You are Mailgent, a practical email and web research assistant. You are allowed to use Google Search and URL context when the user asks for current information, websites, companies, contact details, products, or research. You can read Gmail only through explicitly authorized Gmail API tools; never claim to have read mail unless data is provided. NEVER use em dashes (— or --) anywhere inside your outputs.`;
+
+  const body = {
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    systemInstruction: {
+      parts: [{ text: systemInstructionText }]
+    },
+    generationConfig: { 
+      thinkingConfig: { thinkingBudget: parseInt(cfg.THINKING_BUDGET) || 10240 }, 
+      temperature: parseFloat(cfg.TEMPERATURE) !== undefined ? parseFloat(cfg.TEMPERATURE) : 0.8,
+      maxOutputTokens: parseInt(cfg.MAX_TOKENS) || 2048
+    },
+    tools: cfg.WEB_GROUNDING ? [{ googleSearch: {} }, { urlContext: {} }] : [{ urlContext: {} }]
+  };
+  
+  const url = cfg.AI_API_URL
+    ? `${cfg.AI_API_URL}/compose`
+    : `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${cfg.GEMINI_API_KEY}`;
+  const requestBody = cfg.AI_API_URL ? { prompt, model: modelId, stream: true } : body;
+  
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody),
+    signal
+  });
+  if (!res.ok) {
+    let detail = '';
+    try { detail = await res.text(); } catch {}
+    throw new Error(`Gemini ${res.status}: ${detail || res.statusText}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  const processLine = line => {
+    if (!line.startsWith('data: ')) return;
+    const payload = line.slice(6).trim();
+    if (!payload || payload === '[DONE]') return;
+    try {
+      const json = JSON.parse(payload);
+      const parts = json.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.thought && part.text) onThought(part.text);
+        else if (part.text) onChunk(part.text);
+      }
+    } catch {}
+  };
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      buffer += decoder.decode();
+      buffer.split('\n').forEach(processLine);
+      break;
+    }
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    lines.forEach(processLine);
+  }
+}
+
+async function callGeminiStreamWithFile(prompt, base64Data, mimeType, onChunk, onThought, signal) {
+  const cfg = getConfig();
+  const modelId = MODEL_ID[state.model] || 'gemini-2.5-flash';
+  
+  const systemInstructionText = cfg.SYSTEM_DIRECTIVE 
+    ? `${cfg.SYSTEM_DIRECTIVE}\n\nGeneral instructions: You are Mailgent, a practical email and web research assistant. NEVER use em dashes (— or --) inside your responses.`
+    : `You are Mailgent, a practical email and web research assistant. NEVER use em dashes (— or --) inside your responses.`;
+
+  const body = {
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: base64Data
+            }
+          }
+        ]
+      }
+    ],
+    systemInstruction: {
+      parts: [{ text: systemInstructionText }]
+    },
+    generationConfig: {
+      thinkingConfig: { thinkingBudget: parseInt(cfg.THINKING_BUDGET) || 10240 },
+      temperature: parseFloat(cfg.TEMPERATURE) !== undefined ? parseFloat(cfg.TEMPERATURE) : 0.8,
+      maxOutputTokens: parseInt(cfg.MAX_TOKENS) || 2048
+    }
+  };
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${cfg.GEMINI_API_KEY}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal
+  });
+  if (!res.ok) {
+    let detail = '';
+    try { detail = await res.text(); } catch {}
+    throw new Error(`Gemini ${res.status}: ${detail || res.statusText}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  const processLine = line => {
+    if (!line.startsWith('data: ')) return;
+    const payload = line.slice(6).trim();
+    if (!payload || payload === '[DONE]') return;
+    try {
+      const json = JSON.parse(payload);
+      const parts = json.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.thought && part.text) onThought(part.text);
+        else if (part.text) onChunk(part.text);
+      }
+    } catch {}
+  };
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      buffer += decoder.decode();
+      buffer.split('\n').forEach(processLine);
+      break;
+    }
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    lines.forEach(processLine);
+  }
+}
+
+async function getLastMessageAttachment() {
+  if (!state.accessToken) return getMockAttachmentData();
+  
+  const listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=10&labelIds=INBOX', {
+    headers: { Authorization: 'Bearer ' + state.accessToken }
+  });
+  if (!listRes.ok) throw new Error('Failed to list messages');
+  const listData = await listRes.json();
+  
+  for (const msgRef of (listData.messages || [])) {
+    const msgRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msgRef.id}?format=full`, {
+      headers: { Authorization: 'Bearer ' + state.accessToken }
+    });
+    if (!msgRes.ok) continue;
+    const msg = await msgRes.json();
+    
+    const parts = msg.payload?.parts || [];
+    const queue = [...parts];
+    while (queue.length > 0) {
+      const part = queue.shift();
+      if (part.parts) queue.push(...part.parts);
+      if (part.body && part.body.attachmentId) {
+        const mimeType = part.mimeType;
+        if (mimeType === 'application/pdf' || mimeType.includes('word') || mimeType.includes('document')) {
+          return {
+            messageId: msgRef.id,
+            attachmentId: part.body.attachmentId,
+            filename: part.filename,
+            mimeType: mimeType,
+            subject: Object.fromEntries((msg.payload?.headers || []).map(h => [h.name.toLowerCase(), h.value])).subject || '(no subject)'
+          };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+async function fetchAttachmentData(messageId, attachmentId) {
+  if (!state.accessToken) return "bW9jayBwZGYgZGF0YSBieXRlcw=="; // Dummy mock base64
+  const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/attachments/${attachmentId}`, {
+    headers: { Authorization: 'Bearer ' + state.accessToken }
+  });
+  if (!res.ok) throw new Error('Failed to download attachment');
+  const data = await res.json();
+  return data.data.replace(/-/g, '+').replace(/_/g, '/');
+}
+
+function getMockAttachmentData() {
+  return {
+    messageId: "mock_pdf_id",
+    attachmentId: "mock_attach_id",
+    filename: "Sagar_Poudel_CS_Enrollment.pdf",
+    mimeType: "application/pdf",
+    subject: "Re: Nepal Student Program laptop grant"
+  };
+}
+
+// ============================================================
+// CONVERSATION ENGINE FLOW
+// ============================================================
+async function onSend() {
+  if (!getConfig().valid) { openConfigModalFromOnboarding(); return; }
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  sendBtn.disabled = true;
+  appendMsg('user', `<div class="bubble">${escapeHtml(text)}</div>`);
+
+  // Auto approve confirmation matching isAffirmative
+  if (state.stage === 'awaiting_approval' && isAffirmative(text)) {
+    appendMsg('ai', `<div class="bubble">Approving and sending your draft(s)...</div>`);
+    await onApprove(state.draft);
+    sendBtn.disabled = false;
+    return;
+  }
+
+  await runChatTurn(text);
+}
+
+async function runChatTurn(text) {
+  const loader = showLoader();
+  state.abortController = new AbortController();
+  try {
+    const lowerText = text.toLowerCase();
+    
+    // Missing Attachment Trigger Warn Check
+    if (lowerText.includes('attach') && !lowerText.includes('attachment') && !lowerText.includes('pdf')) {
+      logAuditEvent('warn', 'Detected word "attach" but no files were explicitly attached.');
+      toast('Missing attachment check: Did you forget to specify the file name?');
+    }
+
+    // Direct Attachment Parsing Flow Interception
+    if (/\b(summarize|read|parse|explain|show|view)\b.*\b(attachment|pdf|word|document|file)\b/i.test(lowerText)) {
+      loader.remove();
+      appendMsg('ai', `<div class="bubble">🔍 Searching recent messages for document files...</div>`);
+      try {
+        const attachment = await getLastMessageAttachment();
+        if (!attachment) {
+          appendMsg('ai', `<div class="bubble">No PDF or Word document attachments found in your recent inbox.</div>`);
+          return;
+        }
+        appendMsg('ai', `<div class="bubble">📥 Found document: <b>${escapeHtml(attachment.filename)}</b>. Analyzing PDF content metrics...</div>`);
+        const base64 = await fetchAttachmentData(attachment.messageId, attachment.attachmentId);
+        
+        const docLoader = showLoader();
+        let responseText = '';
+        await callGeminiStreamWithFile(
+          `Extract details, contract pricing (if any), and summarize the document: ${attachment.filename}`,
+          base64,
+          attachment.mimeType,
+          chunk => responseText += chunk,
+          thought => {
+            const status = docLoader.querySelector('#loaderStatus');
+            if (status) status.textContent = 'Extracting PDF action items...';
+          },
+          state.abortController?.signal
+        );
+        docLoader.remove();
+        appendMsg('ai', `<div class="bubble">${renderMarkdown(responseText)}</div>`);
+        
+        state.chatHistory.push({ role: 'user', text: text });
+        state.chatHistory.push({ role: 'model', text: responseText });
+        saveChatHistory(state.chatHistory);
+        logAuditEvent('create', `Parsed and extracted summary of: ${attachment.filename}`);
+        return;
+      } catch (err) {
+        console.error(err);
+        appendMsg('ai', `<div class="bubble">❌ Attachment extraction failed: ${escapeHtml(err.message)}</div>`);
+        return;
+      }
+    }
+
+    // Phishing Auditing Flow Interception
+    if (/\b(scam|phish|phishing|security|safety|fraud|spam|suspicious)\b/i.test(lowerText)) {
+      loader.remove();
+      appendMsg('ai', `<div class="bubble">🛡️ Commencing Cyber Security scan on recent inbox items...</div>`);
+      try {
+        const recentMails = await getRecentEmails(5, 'INBOX');
+        const auditLoader = showLoader();
+        const securityPrompt = `Analyze these emails for spam or scam spoofing risks: ${JSON.stringify(recentMails)}`;
+        let responseText = '';
+        await callGeminiStream(
+          securityPrompt,
+          chunk => responseText += chunk,
+          thought => {
+            const status = auditLoader.querySelector('#loaderStatus');
+            if (status) status.textContent = 'Scanning links & wire flags...';
+          },
+          state.abortController?.signal
+        );
+        auditLoader.remove();
+        appendMsg('ai', `<div class="bubble">${renderMarkdown(responseText)}</div>`);
+        
+        state.chatHistory.push({ role: 'user', text: text });
+        state.chatHistory.push({ role: 'model', text: responseText });
+        saveChatHistory(state.chatHistory);
+        logAuditEvent('warn', 'Inbox security phishing scan audit logged.');
+        return;
+      } catch (err) {
+        console.error(err);
+        appendMsg('ai', `<div class="bubble">❌ Phishing scanner failure: ${escapeHtml(err.message)}</div>`);
+        return;
+      }
+    }
+
+    let mailContext = [];
+    const isSentRequest = /\b(sent|outbox|past)\b/i.test(lowerText) && (lowerText.includes('email') || lowerText.includes('mail'));
+    const isInboxRequest = isSentRequest ? false : (
+      /\b(check|read|show|summari[sz]e|latest|new|get|list|tell|respond|response|reply|replied|hear|heard|receive|received|any)\b/i.test(lowerText) ||
+      /\b(email|mail|inbox|message|mailbox|brand|brands|company|companies|sender|senders)\b/i.test(lowerText)
+    );
+
+    if (isSentRequest) {
+      mailContext = await getRecentEmails(20, 'SENT');
+    } else if (isInboxRequest) {
+      mailContext = await getRecentEmails(15, 'INBOX');
+    }
+
+    const result = await generateChatResponse(text, loader, mailContext);
+    loader.remove();
+
+    state.chatHistory.push({ role: 'user', text: text });
+    let historyText = result.response || '';
+    if (result.draft) {
+      const draftsList = Array.isArray(result.draft) ? result.draft : [result.draft];
+      draftsList.forEach((d, idx) => {
+        historyText += `\n\n[Draft #${idx + 1} To: ${JSON.stringify(d.to)} | Subject: ${d.subject} | Body: ${d.body}]`;
+      });
+    }
+    state.chatHistory.push({ role: 'model', text: historyText });
+    saveChatHistory(state.chatHistory);
+
+    if (result.draft) {
+      state.draft = result.draft;
+      state.stage = 'awaiting_approval';
+      logAuditEvent('create', `AI generated ${Array.isArray(state.draft) ? state.draft.length : '1'} email drafts.`);
+      renderDraftCard(state.draft, { intro: result.response || 'I prepared the draft email(s) according to your preferences:' });
+    } else {
+      appendMsg('ai', `<div class="bubble">${renderMarkdown(result.response || 'I could not find a response.')}</div>`);
+    }
+  } catch (error) {
+    if (loader) loader.remove();
+    state.stage = 'idle';
+    appendMsg('ai', `<div class="bubble">❌ Request failed: ${escapeHtml(error.message || String(error))}</div>`);
+    logAuditEvent('error', 'Conversation turn execution failure: ' + (error.message || 'unknown'));
+  } finally {
+    state.abortController = null;
+    sendBtn.disabled = false;
+  }
+}
+
+async function generateChatResponse(text, loader, mailContext = []) {
+  const cfg = getConfig();
+  const context = state.chatHistory || [];
+  const prompt = `You are Mailgent, a professional AI email agent. Integrate custom tone context, signatures, and folders dynamically.
+  
+  NEVER use em dashes (— or --) inside generated body or subjects. Use hyphens (-) instead.
+  
+  Verify if drafts contain sensitive legal language, passwords, API keys, negative tones, or wire request indicators. If found, prefix the conversational "response" with a clear warning tag.
+
+  Include a context audit trail block inside "response" specifying:
+  - **Draft generated using:** [Signature, Custom Directives, Tone: ${cfg.DEFAULT_TONE}, Web Grounding: ${cfg.WEB_GROUNDING}]
+  - **Assumptions made:** [Verify sender replies]
+  - **Needs user confirmation:** [Draft approvals required before Gmail sending]
+
+  Return ONLY valid JSON shape:
+  {"response":"short conversational summary with context audit trail","draft":null}
+  OR
+  {"response":"conversational summary with warnings","draft":{"to":["verified@example.com"],"subject":"...","body":"..."}}
+  OR if multiple drafts are parsed:
+  {"response":"audit summary","draft":[{"to":["email1@example.com"],"subject":"...","body":"..."},{"to":["email2@example.com"],"subject":"...","body":"..."}]}
+
+  Use plain text in subjects and bodies. Do not use markdown inside body.
+
+  Context: ${JSON.stringify(context.slice(-40))}
+  Recent Gmails context: ${JSON.stringify(mailContext)}
+  User Request: ${text}`;
+
+  let raw = '';
+  await callGeminiStream(
+    prompt,
+    chunk => raw += chunk,
+    thought => {
+      const status = loader.querySelector('#loaderStatus');
+      if (status) status.textContent = 'Applying writing context & directives...';
+      const panel = loader.querySelector('#loaderThoughts');
+      if (panel) {
+        panel.style.display = 'block';
+        panel.textContent += thought;
+      }
+    },
+    state.abortController?.signal
+  );
+  const parsed = extractJson(raw);
+  if (parsed && typeof parsed === 'object') return parsed;
+  return { response: raw.replace(/^```json|```$/g, '').trim() };
+}
+
+// ============================================================
+// SIDEBAR COLLAPSIBLE VIEW CONTROLS & REDESIGNS
+// ============================================================
+window.switchView = function(view) {
+  state.activeView = view;
+  document.querySelectorAll('.sidebar-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === view);
+  });
+
+  const composer = document.querySelector('.composer');
+
+  if (view === 'chat') {
+    composer.style.display = 'block';
+    main.innerHTML = '';
+    if (state.chatHistory && state.chatHistory.length > 0) {
+      state.chatHistory.forEach(turn => {
+        if (turn.role === 'user') {
+          appendMsg('user', `<div class="bubble">${escapeHtml(turn.text)}</div>`);
+        } else {
+          appendMsg('ai', `<div class="bubble">${renderMarkdown(turn.text)}</div>`);
+        }
+      });
+    } else {
+      const welcome = document.createElement('div');
+      welcome.className = 'welcome';
+      welcome.id = 'welcome';
+      main.appendChild(welcome);
+      if (state.signedIn) {
+        removeLandingPageMiddleText();
+      } else {
+        welcome.innerHTML += `
+          <h2>Compose with AI</h2>
+          <p>Tell me the subject of the email and who it's for. I'll draft it, you approve, then I send it.</p>
+        `;
+      }
+    }
+  } else if (view === 'inbox') {
+    renderInboxView();
+  } else if (view === 'followups') {
+    renderFollowUpsView();
+  } else if (view === 'templates') {
+    renderTemplatesView();
+  } else if (view === 'logs') {
+    renderAuditLogsView();
+  } else if (view === 'settings') {
+    renderSettingsView();
+  }
+};
+
+async function renderInboxView() {
+  clearWelcome();
+  const mainEl = $('main');
+  mainEl.innerHTML = `
+    <div style="padding: 4px 0 20px;">
+      <h2 style="font-size:18px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+        📥 Inbox Triage
+        <button class="inline-edit-btn" onclick="renderInboxView()" title="Refresh Inbox" style="padding:6px; background:var(--surface-2); border-radius:12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </button>
+      </h2>
+      <div id="inboxList" style="display:flex; flex-direction:column; gap:10px;">
+        <div class="skeleton" style="height:60px; border-radius:12px;"></div>
+        <div class="skeleton" style="height:60px; border-radius:12px; margin-top:10px;"></div>
+      </div>
+    </div>
+  `;
+  document.querySelector('.composer').style.display = 'none';
+
+  try {
+    const emails = await getRecentEmails(15, 'INBOX');
+    const listEl = $('inboxList');
+    if (emails.length === 0) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+          <div class="empty-title">You're all caught up!</div>
+          <div class="empty-desc">Mailgent will automatically surface emails that need your priority attention.</div>
+        </div>`;
+      return;
+    }
+    
+    let html = '';
+    emails.forEach((mail) => {
+      const cleanSubject = mail.subject.replace(/—/g, '-').replace(/--/g, '-');
+      const cleanSnippet = mail.snippet.replace(/—/g, '-').replace(/--/g, '-');
+      const isScam = cleanSnippet.toLowerCase().includes('invoice') || cleanSnippet.toLowerCase().includes('wire');
+      
+      html += `
+        <div class="draft-card" onclick="viewInboxMailDetail('${mail.id}')" style="cursor:pointer; margin-top:0; padding:12px; display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-2);">
+            <span style="font-weight:600; color:var(--text);">${escapeHtml(mail.from.split('<')[0] || mail.from)}</span>
+            <span>${escapeHtml(mail.date)}</span>
+          </div>
+          <div style="font-weight:600; font-size:13px; color:var(--text); display:flex; align-items:center; gap:6px;">
+            ${escapeHtml(cleanSubject)}
+            ${isScam ? `<span class="audit-tag warn" style="font-size:9px; padding:1px 4px;">Potential Invoice Risk</span>` : ''}
+          </div>
+          <div style="font-size:12px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.4;">${escapeHtml(cleanSnippet)}</div>
+        </div>
+      `;
+    });
+    listEl.innerHTML = html;
+  } catch (err) {
+    $('inboxList').innerHTML = `<div style="color:var(--danger); padding:20px;">Failed to load inbox: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+window.viewInboxMailDetail = async function(id) {
+  const mainEl = $('main');
+  mainEl.innerHTML = `<div style="text-align:center; padding:80px;"><div class="think-spinner" style="margin: 0 auto 12px;"></div><div>Triaging thread content...</div></div>`;
+  
+  try {
+    let msg;
+    if (!state.signedIn) {
+      msg = {
+        snippet: "This is a mock student program document attachment review email.",
+        payload: {
+          headers: [
+            { name: "Subject", value: "Re: Nepal Student Program laptop grant" },
+            { name: "From", value: "US Mobile Help <help@usmobile.com>" },
+            { name: "To", value: "Sagar Poudel <sagar@poudel.com>" },
+            { name: "Date", value: "July 28, 2026" }
+          ]
+        }
+      };
+    } else {
+      const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`, {
+        headers: { Authorization: 'Bearer ' + state.accessToken }
+      });
+      if (!res.ok) throw new Error('Failed to load email');
+      msg = await res.json();
+    }
+    
+    const headers = {};
+    (msg.payload?.headers || []).forEach(h => { headers[h.name.toLowerCase()] = h.value; });
+    
+    let bodyText = msg.snippet || '';
+    const parts = msg.payload?.parts || [];
+    const queue = [...parts];
+    while (queue.length > 0) {
+      const part = queue.shift();
+      if (part.parts) queue.push(...part.parts);
+      if (part.mimeType === 'text/plain' && part.body && part.body.data) {
+        bodyText = atob(part.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+        break;
+      }
+    }
+
+    const cleanSubject = (headers.subject || '(no subject)').replace(/—/g, '-').replace(/--/g, '-');
+    const cleanBody = bodyText.replace(/—/g, '-').replace(/--/g, '-');
+    
+    const isSensitive = cleanBody.includes('invoice') || cleanBody.includes('certify') || cleanBody.includes('account');
+
+    mainEl.innerHTML = `
+      <div style="padding:4px 0 24px;">
+        <button class="btn btn-ghost" onclick="renderInboxView()" style="margin-bottom:16px; padding:6px 12px; background:var(--surface-2); border-radius:12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px;"><polyline points="15 18 9 12 15 6"/></svg> Back to Triage
+        </button>
+        
+        <h2 style="font-size:16px; margin-bottom:12px; font-weight:600;">${escapeHtml(cleanSubject)}</h2>
+        
+        ${isSensitive ? `
+          <div style="background:#fdf7e0; border:1px solid #f0a30a; color:#b06000; padding:12px; border-radius:10px; font-size:12.5px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Review Caution: Email body contains potential billing, invoice, or cert details. Scan carefully.
+          </div>
+        ` : ''}
+
+        <div class="draft-card" style="margin-top:0; padding:16px;">
+          <div style="display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--text-2); border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:12px;">
+            <div><b>From:</b> ${escapeHtml(headers.from || '')}</div>
+            <div><b>To:</b> ${escapeHtml(headers.to || '')}</div>
+            <div><b>Date:</b> ${escapeHtml(headers.date || '')}</div>
+          </div>
+          
+          <div style="line-height:1.6; white-space:pre-wrap; font-size:13px; max-height:400px; overflow-y:auto; word-break:break-word;">${escapeHtml(cleanBody)}</div>
+          
+          <div style="margin-top:16px; display:flex; gap:8px;">
+            <button class="btn btn-primary" onclick="replyToSender('${escapeHtml(headers.from)}', '${escapeHtml(cleanSubject)}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px;"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg> Reply with AI Agent
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    mainEl.innerHTML = `<div style="color:var(--danger); padding:20px;">Failed to load email details: ${escapeHtml(err.message)}</div>`;
+  }
+};
+
+window.replyToSender = function(from, subject) {
+  switchView('chat');
+  let email = from;
+  const match = from.match(/<(.+?)>/);
+  if (match) email = match[1];
+
+  input.value = `Draft a reply to ${email} regarding "${subject}". Keep it professional and polite.`;
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  sendBtn.disabled = false;
+  input.focus();
+};
+
+// ============================================================
+// SMART FOLLOW-UPS ENGINE
+// ============================================================
+function renderFollowUpsView() {
+  clearWelcome();
+  const mainEl = $('main');
+  document.querySelector('.composer').style.display = 'none';
+
+  // Find threads that need following up
+  const followups = [
+    {
+      contact: "Michael Scott",
+      subject: "Status on pending Q1 Invoice payment",
+      lastDate: "Tuesday, Aug 1",
+      reason: "You sent the invoice 3 days ago. No reply has been received yet.",
+      draft: "Hi Michael, just following up on the pending Q1 invoice status. Let me know if you need anything else from my end."
+    },
+    {
+      contact: "US Mobile Sponsorship Help",
+      subject: "Nepal Student Program laptop grant inquiry",
+      lastDate: "July 28, 2026",
+      reason: "They requested certificate proof 7 days ago. Let's send a warm update.",
+      draft: "Dear US Mobile Team, I wanted to kindly check in on our student laptop sponsorship application status. I am ready to forward my enrollment details."
+    }
+  ];
+
+  let html = `
+    <div style="padding: 4px 0 20px;">
+      <h2 style="font-size:18px; margin-bottom:12px;">📊 Smart Follow-Ups</h2>
+      <p style="color:var(--text-2); font-size:13px; margin-bottom:16px;">Mailgent scans sent mail threads and warns you if someone has gone quiet or if a thread needs a follow-up action card.</p>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+  `;
+
+  followups.forEach((follow, idx) => {
+    html += `
+      <div class="draft-card" style="margin-top:0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-weight:600; font-size:14px; color:var(--text);">${escapeHtml(follow.contact)}</span>
+          <span class="audit-tag warn" style="font-size:10px; padding:2px 6px;">Unanswered</span>
+        </div>
+        <div style="font-size:13px; font-weight:500; color:var(--text-2); margin-bottom:4px;">Subject: ${escapeHtml(follow.subject)}</div>
+        <div style="font-size:12.5px; background:var(--surface-2); padding:10px; border-radius:8px; line-height:1.4; color:var(--text-2); margin-bottom:10px;">
+          💡 <b>Nudge recommendation:</b> ${escapeHtml(follow.reason)} (Last contact: ${escapeHtml(follow.lastDate)})
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary" onclick="useFollowupDraft(${idx})" style="padding:6px 12px; font-size:12px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px;"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg> Auto-Draft Nudge
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `</div></div>`;
+  mainEl.innerHTML = html;
+  window._followupsList = followups;
+}
+
+window.useFollowupDraft = function(idx) {
+  const follow = window._followupsList[idx];
+  switchView('chat');
+  input.value = `Prepare follow-up to ${follow.contact} about "${follow.subject}": "${follow.draft}"`;
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  sendBtn.disabled = false;
+  onSend();
+};
+
+// ============================================================
+// TEMPLATES MANAGEMENT LIBRARY
+// ============================================================
+function renderTemplatesView() {
+  clearWelcome();
+  const mainEl = $('main');
+  document.querySelector('.composer').style.display = 'none';
+
+  const templates = loadTemplates();
+
+  let html = `
+    <div style="padding: 4px 0 20px;">
+      <h2 style="font-size:18px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+        📂 Quick Templates
+        <button class="btn btn-primary" onclick="showCreateTemplate()" style="padding:6px 12px; font-size:12px; border-radius:8px;">+ New Template</button>
+      </h2>
+      <p style="color:var(--text-2); font-size:13px; margin-bottom:16px;">Select reusable structures to populate your composer. Feel free to inject bracketed variables like <code>{{first_name}}</code>.</p>
+      
+      <div id="newTemplateForm" class="draft-card" style="display:none; margin-bottom:20px; padding:16px;">
+        <h4 style="font-weight:600; margin-bottom:12px;">Create Template</h4>
+        <div class="field">
+          <label class="field-label">Template Title</label>
+          <input type="text" class="field-input" id="tmplTitle" style="background:var(--surface-2); padding:8px; border-radius:6px; width:100%; margin-top:4px;" placeholder="e.g. Follow-up Invoice" />
+        </div>
+        <div class="field" style="margin-top:10px;">
+          <label class="field-label">Description</label>
+          <input type="text" class="field-input" id="tmplDesc" style="background:var(--surface-2); padding:8px; border-radius:6px; width:100%; margin-top:4px;" placeholder="Brief summary of intent" />
+        </div>
+        <div class="field" style="margin-top:10px;">
+          <label class="field-label">AI Instructions</label>
+          <textarea class="field-input" id="tmplPrompt" rows="3" style="background:var(--surface-2); padding:8px; border-radius:6px; width:100%; resize:none; margin-top:4px;" placeholder="Describe what the email should say..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+          <button class="btn btn-ghost" onclick="hideCreateTemplate()" style="padding:6px 12px; font-size:12px;">Cancel</button>
+          <button class="btn btn-primary" onclick="saveNewTemplate()" style="padding:6px 12px; font-size:12px;">Save</button>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+  `;
+
+  templates.forEach((tmpl, idx) => {
+    html += `
+      <div class="draft-card" style="margin-top:0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="font-weight:600; font-size:14px; color:var(--text);">${escapeHtml(tmpl.title)}</div>
+          <button class="inline-edit-btn" onclick="deleteTemplate(${idx})" title="Delete template" style="color:var(--danger)">Delete</button>
+        </div>
+        <div style="font-size:12.5px; color:var(--text-2); line-height:1.4; margin-bottom:12px;">${escapeHtml(tmpl.desc)}</div>
+        <button class="btn btn-primary" onclick="useTemplate(${idx})" style="padding:6px 12px; font-size:12px; border-radius:8px;">
+          Load Template
+        </button>
+      </div>
+    `;
+  });
+
+  html += `</div></div>`;
+  mainEl.innerHTML = html;
+  window._templatesList = templates;
+}
+
+window.showCreateTemplate = function() { $('newTemplateForm').style.display = 'block'; };
+window.hideCreateTemplate = function() { $('newTemplateForm').style.display = 'none'; };
+
+window.saveNewTemplate = function() {
+  const title = $('tmplTitle').value.trim();
+  const desc = $('tmplDesc').value.trim();
+  const prompt = $('tmplPrompt').value.trim();
+  if (!title || !prompt) { toast('Please specify title and prompt.'); return; }
+
+  const templates = loadTemplates();
+  templates.push({ title, desc, prompt });
+  saveTemplates(templates);
+  hideCreateTemplate();
+  renderTemplatesView();
+  toast('Template saved!');
+  logAuditEvent('create', `Custom template created: ${title}`);
+};
+
+window.deleteTemplate = function(idx) {
+  if (confirm('Delete this template?')) {
+    const templates = loadTemplates();
+    const removed = templates.splice(idx, 1)[0];
+    saveTemplates(templates);
+    renderTemplatesView();
+    toast('Template removed.');
+    logAuditEvent('warn', `Custom template deleted: ${removed.title}`);
+  }
+};
+
+window.useTemplate = function(idx) {
+  const tmpl = window._templatesList[idx];
+  switchView('chat');
+  input.value = tmpl.prompt;
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  sendBtn.disabled = false;
+  onSend();
+};
+
+// ============================================================
+// SECURITY AUDIT LOG VIEW
+// ============================================================
+function renderAuditLogsView() {
+  clearWelcome();
+  const mainEl = $('main');
+  document.querySelector('.composer').style.display = 'none';
+
+  const logs = loadAuditLogs();
+
+  let html = `
+    <div style="padding: 4px 0 20px;">
+      <h2 style="font-size:18px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+        🛡️ Security Audit Log
+        <button class="btn btn-ghost" onclick="clearAuditLogs()" style="padding:6px 12px; font-size:12px; background:var(--surface-2); border-radius:10px;">Clear Logs</button>
+      </h2>
+      <p style="color:var(--text-2); font-size:13px; margin-bottom:16px;">Audit all autonomous email operations, scams flagged, and Google Gmail API connections.</p>
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden;">
+  `;
+
+  if (logs.length === 0) {
+    html += `<div style="padding:40px; text-align:center; color:var(--text-2);">No events recorded yet.</div>`;
+  } else {
+    logs.forEach(log => {
+      html += `
+        <div class="audit-row">
+          <span class="audit-time">${escapeHtml(log.timestamp)}</span>
+          <span class="audit-tag ${escapeHtml(log.type)}">${escapeHtml(log.type)}</span>
+          <span style="font-size:13px; line-height:1.4;">${escapeHtml(log.message)}</span>
+        </div>
+      `;
+    });
+  }
+
+  html += `</div></div>`;
+  mainEl.innerHTML = html;
+}
+
+window.clearAuditLogs = function() {
+  if (confirm('Are you sure you want to clear all log traces?')) {
+    saveAuditLogs([]);
+    renderAuditLogsView();
+    toast('Logs cleared.');
+  }
+};
+
+// ============================================================
+// ORGANIZED SETTINGS DASHBOARD REDESIGN (Replacing Modal)
+// ============================================================
+function renderSettingsView() {
+  clearWelcome();
+  const mainEl = $('main');
+  document.querySelector('.composer').style.display = 'none';
+
+  const cfg = getConfig();
+
+  mainEl.innerHTML = `
+    <div class="settings-container">
+      <h2 style="font-size:18px; margin-bottom:14px;">⚙️ Settings & Customization</h2>
+      
+      <!-- Settings Sub-tabs -->
+      <div class="settings-tabs">
+        <button class="settings-tab active" onclick="switchSettingsTab('account')">Account</button>
+        <button class="settings-tab" onclick="switchSettingsTab('behavior')">AI Behavior</button>
+        <button class="settings-tab" onclick="switchSettingsTab('writing')">Writing Style</button>
+        <button class="settings-tab" onclick="switchSettingsTab('safety')">Safety & Approvals</button>
+        <button class="settings-tab" onclick="switchSettingsTab('advanced')">Advanced Key Mode</button>
+      </div>
+
+      <!-- Tab 1: Account -->
+      <div class="settings-panel active" id="panel_account">
+        <div class="draft-card" style="margin-top:0;">
+          <h4 style="font-weight:600; margin-bottom:10px;">Google Connection</h4>
+          <div style="font-size:13px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+            <span class="dot" style="background:${state.signedIn ? 'var(--success)' : 'var(--danger)'}"></span>
+            <span>Gmail Integration Status: <b>${state.signedIn ? 'Connected as ' + state.userEmail : 'Disconnected'}</b></span>
+          </div>
+          ${state.signedIn ? `
+            <button class="btn btn-danger" onclick="performSignOut()" style="background:#fce8e6; border-radius:12px; padding:8px 16px;">Disconnect Gmail</button>
+          ` : `
+            <button class="btn btn-primary" onclick="doSignIn()" style="border-radius:12px; padding:8px 16px;">Connect Gmail Account</button>
+          `}
+          
+          <div style="margin-top:20px; padding-top:14px; border-top:1px solid var(--border); font-size:12px; color:var(--text-2); line-height:1.4;">
+            <b>🔒 Data Use Policy:</b> Mailgent stores Gmail access tokens client-side only. We inspect message content specifically to compose or summary actions. No data is stored outside your local browser environment.
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: AI Behavior -->
+      <div class="settings-panel" id="panel_behavior">
+        <div class="draft-card" style="margin-top:0;">
+          <div class="field">
+            <label class="field-label">Model Preference Mode</label>
+            <select class="field-input" id="setMode" style="background:var(--surface-2); padding:10px; border-radius:8px; width:100%; margin-top:4px;">
+              <option value="gemini-2.5-flash" ${state.model === 'gemini-2.5-flash' ? 'selected' : ''}>Everyday (Fast & Optimized drafts - Gemini 2.5 Flash)</option>
+              <option value="gemini-3-flash" ${state.model === 'gemini-3-flash' ? 'selected' : ''}>Deep Thinking (Heavy reasoning, scheduling & grounding - Gemini 3 Flash)</option>
+            </select>
+          </div>
+          
+          <div class="field" style="margin-top:14px;">
+            <label style="display:flex; align-items:center; gap:8px; font-weight:500; cursor:pointer;">
+              <input type="checkbox" id="setGrounding" ${cfg.WEB_GROUNDING ? 'checked' : ''}>
+              <span>Enable Google Search Grounding</span>
+            </label>
+            <div class="field-hint" style="margin-top:4px;">Instructs Gemini to retrieve real-time websites and phone brand details automatically.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Writing Style -->
+      <div class="settings-panel" id="panel_writing">
+        <div class="draft-card" style="margin-top:0;">
+          <div class="field">
+            <label class="field-label">Permanent Custom Persona / Directives</label>
+            <textarea class="field-input" id="setDirectives" rows="2" style="background:var(--surface-2); padding:10px; border-radius:8px; width:100%; resize:none; margin-top:4px;" placeholder="e.g. Always write as Sagar Poudel, 17 years old, studying Class 11 CS.">${escapeHtml(cfg.SYSTEM_DIRECTIVE)}</textarea>
+            <div class="field-hint">Guide Mailgent's writing voice context dynamically inside every generated reply.</div>
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label class="field-label">HTML / Text Email Signature</label>
+            <textarea class="field-input" id="setSignature" rows="2" style="background:var(--surface-2); padding:10px; border-radius:8px; width:100%; font-family:monospace; resize:none; margin-top:4px;" placeholder="e.g. <p>Best regards,<br><b>Sagar Poudel</b></p>">${escapeHtml(cfg.EMAIL_SIGNATURE)}</textarea>
+            <div class="field-hint">Appended automatically into outgoing messages. Keep it clean.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Safety & Approvals -->
+      <div class="settings-panel" id="panel_safety">
+        <div class="draft-card" style="margin-top:0;">
+          <div class="field">
+            <label class="field-label">Autonomy Level Control</label>
+            <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+              <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+                <input type="radio" name="setAuth" value="1" ${cfg.APPROVAL_LEVEL === '1' ? 'checked' : ''}> <span><b>Level 1: Suggest only</b> (Generates conversational text blocks but holds Gmail actions)</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+                <input type="radio" name="setAuth" value="2" ${cfg.APPROVAL_LEVEL === '2' ? 'checked' : ''}> <span><b>Level 2: Draft + Approve</b> (Default: AI drafts, holds for Sagar's click before sending)</span>
+              </label>
+            </div>
+          </div>
+          
+          <div style="background:#fdf7e0; border:1px solid #f0a30a; color:#b06000; padding:10px; border-radius:8px; font-size:12px; line-height:1.4; margin-top:14px; display:flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            Automated scanning is enabled to restrict em dashes (—) and flag billing scam risks.
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 5: Advanced Model Settings -->
+      <div class="settings-panel" id="panel_advanced">
+        <div class="draft-card" style="margin-top:0;">
+          <div class="field">
+            <label class="field-label">Gemini API Key</label>
+            <input type="password" class="field-input" id="setGeminiKey" style="background:var(--surface-2); padding:10px; border-radius:8px; width:100%; margin-top:4px;" value="${escapeHtml(cfg.GEMINI_API_KEY)}" placeholder="AIzaSy..." />
+            <div class="field-hint">From <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--text)">aistudio.google.com</a>. Local stored keys are for prototype only.</div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+            <div class="field">
+              <label class="field-label">Temperature</label>
+              <input type="number" class="field-input" id="setTemp" style="background:var(--surface-2); padding:10px; border-radius:8px; width:100%;" min="0" max="2" step="0.1" value="${cfg.TEMPERATURE}" />
+            </div>
+            <div class="field">
+              <label class="field-label">Max Tokens</label>
+              <input type="number" class="field-input" id="setMaxTok" style="background:var(--surface-2); padding:10px; border-radius:8px; width:100%;" value="${cfg.MAX_TOKENS}" />
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:10px;">
+            <label class="field-label">Thinking Budget</label>
+            <input type="number" class="field-input" id="setThinkBudget" style="background:var(--surface-2); padding:10px; border-radius:8px; width:100%;" value="${cfg.THINKING_BUDGET}" />
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px; display:flex; justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="saveDashboardSettings()" style="border-radius:12px; padding:10px 20px;">Save Changes</button>
+      </div>
+
+    </div>
+  `;
+}
+
+window.switchSettingsTab = function(tabName) {
+  document.querySelectorAll('.settings-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('onclick').includes(tabName));
+  });
+  document.querySelectorAll('.settings-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'panel_' + tabName);
+  });
+};
+
+window.saveDashboardSettings = function() {
+  const gKey = $('setGeminiKey').value.trim();
+  const directives = $('setDirectives').value.trim();
+  const signature = $('setSignature').value.trim();
+  const temp = parseFloat($('setTemp').value) || 0.8;
+  const maxTok = parseInt($('setMaxTok').value) || 2048;
+  const thinkBud = parseInt($('setThinkBudget').value) || 10240;
+  const grounding = $('setGrounding').checked;
+  const model = $('setMode').value;
+  
+  const checkedRadio = document.querySelector('input[name="setAuth"]:checked');
+  const authLevel = checkedRadio ? checkedRadio.value : '2';
+
+  const cfg = loadConfig();
+  cfg.GEMINI_API_KEY = gKey;
+  cfg.SYSTEM_DIRECTIVE = directives;
+  cfg.EMAIL_SIGNATURE = signature;
+  cfg.TEMPERATURE = temp;
+  cfg.MAX_TOKENS = maxTok;
+  cfg.THINKING_BUDGET = thinkBud;
+  cfg.WEB_GROUNDING = grounding;
+  cfg.APPROVAL_LEVEL = authLevel;
+  saveConfig(cfg);
+
+  state.model = model;
+  $('modelLabel').textContent = MODEL_LABEL[model];
+
+  toast('Settings saved successfully!');
+  logAuditEvent('create', 'Settings dashboard attributes updated manually.');
+  
+  // Re-sync UI state if chat view selected
+  switchView('settings');
+};
+
+// ============================================================
+// INLINE EDIT PREVIEW ACTIONS
+// ============================================================
+async function onApprove(draft) {
+  if (state.stage !== 'awaiting_approval') return;
+  state.stage = 'sending';
+  await sendAll(draft);
+}
+function onRequestEdit(draft) {
+  state.stage = 'awaiting_edit';
+  appendMsg('ai', `<div class="bubble">What should I change? Be specific — tone, length, points to add/remove, etc.</div>`);
+  input.placeholder = 'Tell me what to change…';
+  input.focus();
+}
+function onDiscard() {
+  state.stage = 'idle';
+  state.draft = null;
+  state.chatHistory = []; // Reset history
+  saveChatHistory([]); // Save empty history
+  appendMsg('ai', `<div class="bubble">Discarded. Want to compose a new email? Just give me a prompt.</div>`);
+  input.placeholder = "Ask Mailgent to draft an email...";
+}
+
+async function sendAll(draftOrDrafts) {
+  const drafts = Array.isArray(draftOrDrafts) ? draftOrDrafts : [draftOrDrafts];
+  let totalRecipients = 0;
+  for (const d of drafts) {
+    totalRecipients += (d.to || []).length;
+  }
+
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.innerHTML = `
+    <div class="bubble">Sending ${drafts.length} draft(s)...</div>
+    <div class="progress-card">
+      <div class="progress-bar"><div class="progress-fill" id="pFill"></div></div>
+      <div class="progress-stats">
+        <div class="stat"><span class="stat-num" id="pSent">0</span> sent</div>
+        <div class="stat"><span class="stat-num" id="pTotal">${totalRecipients}</span> total</div>
+        <div class="stat failed"><span class="stat-num" id="pFailed">0</span> failed</div>
+      </div>
+      <div class="progress-log" id="pLog"></div>
+    </div>
+  `;
+  main.appendChild(div);
+  main.scrollTop = main.scrollHeight;
+  const fill = div.querySelector('#pFill'), sentEl = div.querySelector('#pSent'), failedEl = div.querySelector('#pFailed'), log = div.querySelector('#pLog');
+  let sent = 0, failed = 0;
+
+  for (const d of drafts) {
+    for (const addr of (d.to || [])) {
+      try {
+        await gmailRawSend(addr, d.subject, d.body);
+        sent++;
+        const row = document.createElement('div');
+        row.className = 'log-row';
+        row.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg><span>${escapeHtml(addr)} (Subject: ${escapeHtml(d.subject)})</span>`;
+        log.appendChild(row);
+      } catch (e) {
+        failed++;
+        const row = document.createElement('div');
+        row.className = 'log-row';
+        row.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="3"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg><span>${escapeHtml(addr)} — failed</span>`;
+        log.appendChild(row);
+      }
+      sentEl.textContent = sent;
+      failedEl.textContent = failed;
+      fill.style.width = ((sent + failed) / totalRecipients * 100) + '%';
+      log.scrollTop = log.scrollHeight;
+      main.scrollTop = main.scrollHeight;
+    }
+  }
+
+  state.stage = 'done';
+  state.draft = null;
+  state.chatHistory = []; // Reset history as well!
+  saveChatHistory([]); // Save empty history
+  appendMsg('ai', `<div class="bubble">Done sending all drafts. <b>${sent}</b> sent${failed ? `, <b>${failed}</b> failed` : ''}. Want to compose another?</div>`);
+  input.placeholder = "Ask Mailgent to draft an email...";
+}
+
+sendBtn.addEventListener('click', onSend);
+
+// ============================================================
+// MOBILE MENU SLIDERS
+// ============================================================
+const menuBtn = $('menuBtn');
+const sidebar = $('sidebar');
+const sidebarBackdrop = $('sidebarBackdrop');
+const sidebarCloseBtn = $('sidebarCloseBtn');
+
+if (menuBtn && sidebar) {
+  menuBtn.addEventListener('click', () => {
+    sidebar.classList.add('open');
+    sidebarBackdrop.classList.add('open');
+  });
+}
+if (sidebarCloseBtn) {
+  sidebarCloseBtn.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    sidebarBackdrop.classList.remove('open');
+  });
+}
+if (sidebarBackdrop) {
+  sidebarBackdrop.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    sidebarBackdrop.classList.remove('open');
+  });
+}
+
+document.querySelectorAll('.sidebar-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const view = btn.dataset.view;
+    if (view) {
+      switchView(view);
+      sidebar.classList.remove('open');
+      sidebarBackdrop.classList.remove('open');
+    }
+  });
+});
+
+// ============================================================
+// MODEL SWITCHER DIALOG SHEET
+// ============================================================
+const sheet = $('sheet'), backdrop = $('sheetBackdrop');
+function openSheet(){ sheet.classList.add('open'); backdrop.classList.add('open'); }
+function closeSheet(){ sheet.classList.remove('open'); backdrop.classList.remove('open'); }
+
+$('modelPill').addEventListener('click', openSheet);
+backdrop.addEventListener('click', closeSheet);
+
+sheet.querySelectorAll('.opt').forEach(opt => {
+  opt.addEventListener('click', () => {
+    state.model = opt.dataset.model;
+    $('modelLabel').textContent = MODEL_LABEL[state.model];
+    sheet.querySelectorAll('.opt').forEach(o => {
+      o.classList.toggle('active', o === opt);
+      o.querySelector('.opt-check').style.display = o === opt ? 'block' : 'none';
+    });
+    setTimeout(closeSheet, 200);
+    toast('Model Switched to: ' + MODEL_LABEL[state.model]);
+    logAuditEvent('create', `AI model switched to: ${MODEL_LABEL[state.model]}`);
+  });
+});
+
+// ============================================================
+// INCEPTION THEME CONTROLS & LOADERS
+// ============================================================
+const themeBtn = $('themeBtn');
+function initTheme() {
+  const currentTheme = localStorage.getItem('theme') || 'auto';
+  if (currentTheme === 'dark' || (currentTheme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.body.classList.add('dark-theme');
+    updateThemeIcons(true);
+  } else {
+    document.body.classList.remove('dark-theme');
+    updateThemeIcons(false);
+  }
+}
+function updateThemeIcons(isDark) {
+  const sun = themeBtn.querySelector('.sun');
+  const moon = themeBtn.querySelector('.moon');
+  if (isDark) {
+    sun.style.display = 'none';
+    moon.style.display = 'block';
+  } else {
+    sun.style.display = 'block';
+    moon.style.display = 'none';
+  }
+}
+themeBtn.addEventListener('click', () => {
+  const isDark = document.body.classList.toggle('dark-theme');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  updateThemeIcons(isDark);
+  toast(isDark ? 'Dark theme enabled' : 'Light theme enabled');
+});
+window.addEventListener('load', initTheme);
+
+// ============================================================
+// ON PAGE LOAD RESIZE AND CHECKS
+// ============================================================
+function applyResponsive() {
+  $('app').classList.toggle('desktop', window.innerWidth > 768);
+}
+window.addEventListener('resize', applyResponsive);
+applyResponsive();
+
+// Preload dynamic setups
+window.addEventListener('load', async () => {
+  loadTemplates(); // Populate cache defaults
+  
+  if (!getConfig().valid) {
+    // Open Settings view directly if keys are empty so they can setup.
+    switchView('settings');
+    openConfigModalFromOnboarding();
+    return;
+  }
+  
+  try { await signIn({ silent: true }); }
+  catch (error) { console.info('Silent Google Auth skipped.'); }
+});
+</script>
+</body>
+</html>
