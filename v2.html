@@ -1,0 +1,2517 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mailgent — AI Email Agent</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --border: #dbe2ec;
+      --border-strong: #c9d4e3;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-soft: #eff6ff;
+      --success: #16a34a;
+      --success-soft: #f0fdf4;
+      --warning: #d97706;
+      --warning-soft: #fffbeb;
+      --danger: #dc2626;
+      --danger-soft: #fef2f2;
+      --violet: #7c3aed;
+      --shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, "Google Sans", Roboto, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+      color: inherit;
+    }
+
+    button { cursor: pointer; }
+
+    h1, h2, h3, h4, p { margin: 0; }
+    h2 { font-size: 20px; font-weight: 700; }
+    h3 { font-size: 16px; font-weight: 700; }
+    h4 {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .hidden { display: none !important; }
+    .muted { color: var(--muted); }
+    .small { font-size: 12px; }
+    .strong { font-weight: 700; }
+
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 600;
+      transition: 160ms ease;
+      background: transparent;
+    }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.22);
+    }
+
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+
+    .btn-secondary {
+      background: var(--surface);
+      border-color: var(--border-strong);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover { background: var(--surface-2); }
+
+    .btn-danger {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-color: rgba(220, 38, 38, 0.18);
+    }
+
+    .btn-lg {
+      padding: 13px 18px;
+      font-size: 15px;
+      border-radius: 12px;
+    }
+
+    .btn-sm {
+      padding: 7px 10px;
+      font-size: 13px;
+      border-radius: 9px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 2000;
+      min-width: 260px;
+      max-width: 420px;
+      padding: 13px 15px;
+      border-radius: 12px;
+      background: #111827;
+      color: white;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: 200ms ease;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #065f46; }
+    .toast.error { background: #991b1b; }
+    .toast.warning { background: #92400e; }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-panel {
+      position: relative;
+      width: min(760px, 100%);
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+      background: white;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      padding: 20px;
+    }
+
+    .modal-panel.narrow {
+      width: min(560px, 100%);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .field label { font-weight: 700; }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .field input[type="text"],
+    .field input[type="url"],
+    .field input[type="password"],
+    .field input[type="number"],
+    .field textarea,
+    .field select {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 12px;
+      padding: 11px 12px;
+      outline: none;
+    }
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.10);
+    }
+
+    .field textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .warning-box {
+      background: var(--warning-soft);
+      color: #92400e;
+      border: 1px solid rgba(217,119,6,0.18);
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin: 12px 0;
+      white-space: pre-wrap;
+    }
+
+    .success-box {
+      background: var(--success-soft);
+      color: #166534;
+      border: 1px solid rgba(22,163,74,0.18);
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin: 12px 0;
+    }
+
+    .error-box {
+      background: var(--danger-soft);
+      color: #b91c1c;
+      border: 1px solid rgba(220,38,38,0.18);
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin: 12px 0;
+      white-space: pre-wrap;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 12px;
+    }
+
+    .brand-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--primary), var(--violet));
+      box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.08);
+    }
+
+    .app-view { min-height: 100vh; }
+
+    .topbar {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 18px;
+      background: rgba(255,255,255,0.88);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+    }
+
+    .topbar-left, .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .search {
+      flex: 1;
+      max-width: 640px;
+    }
+
+    .search input {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      border-radius: 12px;
+      padding: 11px 13px;
+      outline: none;
+    }
+
+    .search input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.10);
+      background: white;
+    }
+
+    .model-select {
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 10px;
+      padding: 9px 10px;
+      outline: none;
+      max-width: 220px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 230px minmax(0, 1fr);
+      min-height: calc(100vh - 64px);
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--border);
+      background: rgba(255,255,255,0.65);
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .nav-item {
+      width: 100%;
+      text-align: left;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .nav-item:hover { background: rgba(255,255,255,0.8); }
+
+    .nav-item.active {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      border-color: rgba(37,99,235,0.14);
+    }
+
+    .sidebar-card {
+      padding: 14px;
+      border-radius: 14px;
+      background: white;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .sidebar-card ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+
+    .main {
+      padding: 20px;
+      min-width: 0;
+    }
+
+    .view { min-height: calc(100vh - 104px); }
+
+    .view-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .view-header p {
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .assistant-split {
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+
+    .list-card, .detail-card, .chat-card, .context-card {
+      padding: 16px;
+      min-height: 560px;
+    }
+
+    .email-item {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      transition: 150ms ease;
+    }
+
+    .email-item:hover { transform: translateY(-1px); }
+
+    .email-item.selected {
+      outline: 2px solid rgba(37,99,235,0.24);
+      border-color: var(--primary);
+      background: linear-gradient(180deg, white, #fbfdff);
+    }
+
+    .email-item-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .sender { font-weight: 700; }
+    .subject { font-weight: 600; margin: 4px 0; }
+    .summary { color: var(--muted); }
+
+    .badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .badge {
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .badge.blue { background: var(--primary-soft); color: var(--primary-dark); }
+    .badge.green { background: var(--success-soft); color: var(--success); }
+    .badge.amber { background: var(--warning-soft); color: var(--warning); }
+
+    .detail-header {
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+
+    .detail-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    .meta-box {
+      padding: 13px;
+      border-radius: 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+    }
+
+    .section-title {
+      margin: 18px 0 8px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .attachment-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: white;
+      margin-bottom: 10px;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .chat-messages {
+      min-height: 380px;
+      max-height: 430px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 6px 2px;
+      margin: 14px 0;
+    }
+
+    .chat-message {
+      max-width: 86%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .chat-message.user {
+      align-self: flex-end;
+      background: #111827;
+      color: white;
+      border-color: #111827;
+      border-bottom-right-radius: 6px;
+    }
+
+    .chat-message.assistant {
+      align-self: flex-start;
+      background: var(--surface-2);
+      border-bottom-left-radius: 6px;
+    }
+
+    .chat-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .chat-input {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .chat-input textarea {
+      min-height: 60px;
+      max-height: 140px;
+      resize: vertical;
+      padding: 12px 13px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      outline: none;
+      background: white;
+    }
+
+    .chat-input textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.10);
+    }
+
+    .context-list {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .template-card {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 180px;
+    }
+
+    .template-body {
+      color: var(--muted);
+      white-space: pre-wrap;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 5;
+      -webkit-box-orient: vertical;
+    }
+
+    .settings-layout {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .settings-panel {
+      padding: 18px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    .inline-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .empty-state {
+      padding: 26px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state .btn { margin-top: 12px; }
+
+    .pre-body {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font: inherit;
+    }
+
+    .attachment-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 7px 10px;
+      margin: 6px 6px 0 0;
+      background: white;
+    }
+
+    .attachment-chip button {
+      border: 0;
+      background: transparent;
+      color: var(--danger);
+      font-weight: 900;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar {
+        flex-direction: row;
+        overflow-x: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+        align-items: center;
+      }
+      .nav { flex-direction: row; }
+      .nav-item { width: auto; white-space: nowrap; }
+      .sidebar-card { display: none; }
+      .split, .assistant-split, .settings-layout, .form-grid, .detail-meta, .grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <!-- CREDENTIALS MODAL -->
+  <div id="credentialsModal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel narrow">
+      <div class="brand"><span class="brand-dot"></span> Mailgent</div>
+      <h2>Connect Mailgent</h2>
+      <p class="muted" style="margin: 10px 0 16px;">
+        Enter your Google OAuth Client ID and Gemini API key. This screen remains open until valid credentials are entered.
+      </p>
+
+      <div id="credentialError" class="error-box hidden"></div>
+
+      <div class="field">
+        <label for="credentialOAuth">Google OAuth Client ID</label>
+        <input id="credentialOAuth" type="text" placeholder="1234567890-abc.apps.googleusercontent.com" autocomplete="off" />
+        <div class="hint">
+          From Google Cloud Console → APIs & Services → Credentials. Must end with .apps.googleusercontent.com.
+          Gmail API must be enabled and your origin must be authorized.
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="credentialGemini">Gemini API Key</label>
+        <input id="credentialGemini" type="password" placeholder="AIza..." autocomplete="off" />
+        <div class="hint">
+          From https://aistudio.google.com/apikey. Usually starts with AIza.
+        </div>
+      </div>
+
+      <div class="warning-box">
+        Security note: storing API keys in the browser is acceptable only for a private prototype.
+        For production, move Gemini calls and secrets to a secure backend.
+      </div>
+
+      <button id="credentialSubmit" class="btn btn-primary btn-lg" style="width:100%;">Validate & Continue</button>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <section id="appView" class="app-view hidden">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="brand" style="margin:0;"><span class="brand-dot"></span> Mailgent</div>
+      </div>
+
+      <div class="search">
+        <input id="globalSearch" type="text" placeholder="Search loaded Gmail messages" />
+      </div>
+
+      <div class="topbar-right">
+        <select id="topbarModel" class="model-select" title="Gemini model"></select>
+        <button id="credentialsBtn" class="btn btn-secondary btn-sm">Credentials</button>
+        <button id="settingsBtn" class="btn btn-secondary btn-sm">Settings</button>
+        <button id="authBtn" class="btn btn-primary btn-sm">Connect Gmail</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <nav class="nav">
+          <button class="nav-item active" data-view="inbox">Inbox</button>
+          <button class="nav-item" data-view="assistant">Assistant</button>
+          <button class="nav-item" data-view="templates">Templates</button>
+          <button class="nav-item" data-view="settings">Settings</button>
+        </nav>
+
+        <div class="sidebar-card">
+          <div class="strong">Real integrations</div>
+          <ul>
+            <li>Gmail inbox loading</li>
+            <li>Gemini drafting</li>
+            <li>Gmail sending</li>
+            <li>Attachment support</li>
+          </ul>
+        </div>
+      </aside>
+
+      <main class="main">
+        <!-- INBOX -->
+        <section id="view-inbox" class="view">
+          <div class="view-header">
+            <div>
+              <h2>Inbox</h2>
+              <p>Real Gmail messages. Connect Gmail to load your inbox.</p>
+            </div>
+
+            <div class="inline-controls">
+              <button id="composeBtn" class="btn btn-primary">Compose</button>
+              <button id="reloadInboxBtn" class="btn btn-secondary">Reload</button>
+            </div>
+          </div>
+
+          <div class="split">
+            <div class="card list-card">
+              <div id="emailList"></div>
+            </div>
+
+            <div class="card detail-card">
+              <div id="emailDetail"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ASSISTANT -->
+        <section id="view-assistant" class="view hidden">
+          <div class="view-header">
+            <div>
+              <h2>Assistant</h2>
+              <p>Real Gemini assistant. Use selected email context for replies.</p>
+            </div>
+          </div>
+
+          <div class="split assistant-split">
+            <div class="card chat-card">
+              <label class="checkbox" style="display:flex; gap:8px; align-items:center; font-weight:700;">
+                <input id="assistantUseContext" type="checkbox" checked />
+                Use selected email as context
+              </label>
+
+              <div id="chatMessages" class="chat-messages"></div>
+
+              <div class="chat-input">
+                <textarea id="chatInput" placeholder="Ask Mailgent to draft, summarize, or prepare a reply"></textarea>
+                <button id="chatSendBtn" class="btn btn-primary">Send</button>
+              </div>
+            </div>
+
+            <div class="card context-card">
+              <h3>Agent context</h3>
+              <div id="assistantContext"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TEMPLATES -->
+        <section id="view-templates" class="view hidden">
+          <div class="view-header">
+            <div>
+              <h2>Templates</h2>
+              <p>Create and reuse your own real templates. Stored locally in your browser.</p>
+            </div>
+          </div>
+
+          <div class="card settings-panel" style="margin-bottom:16px;">
+            <form id="templateForm">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="templateTitle">Template title</label>
+                  <input id="templateTitle" type="text" placeholder="Client follow-up" required />
+                </div>
+
+                <div class="field">
+                  <label for="templateCategory">Category</label>
+                  <input id="templateCategory" type="text" placeholder="Client, Finance, Scheduling" />
+                </div>
+
+                <div class="field full">
+                  <label for="templateBody">Template body</label>
+                  <textarea id="templateBody" placeholder="Hi {{first_name}},
+
+Following up on {{subject}}.
+
+Best regards" required></textarea>
+                  <div class="hint">
+                    Variables: {{first_name}}, {{subject}}. If an email is selected, Mailgent fills them from that email.
+                  </div>
+                </div>
+              </div>
+
+              <button class="btn btn-primary" type="submit">Add template</button>
+            </form>
+          </div>
+
+          <div id="templateGrid" class="grid-3"></div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section id="view-settings" class="view hidden">
+          <div class="view-header">
+            <div>
+              <h2>Settings</h2>
+              <p>Directives, signature, model settings, and credentials.</p>
+            </div>
+            <button id="saveSettingsBtn" class="btn btn-primary">Save settings</button>
+          </div>
+
+          <div class="settings-layout">
+            <div></div>
+
+            <div class="card settings-panel">
+              <div class="form-grid">
+                <div class="field full">
+                  <label for="settingsDirectives">Custom system directives</label>
+                  <textarea id="settingsDirectives" placeholder="Write clearly and concisely. Be polite but direct. Avoid buzzwords."></textarea>
+                  <div class="hint">Guides Mailgent’s permanent persona, writing tone, and personal context.</div>
+                </div>
+
+                <div class="field full">
+                  <label for="settingsSignature">Email signature</label>
+                  <textarea id="settingsSignature" placeholder="Best regards,
+Jordan Smith"></textarea>
+                  <div class="hint">Appended to outgoing plain-text mail. HTML signatures are converted to text.</div>
+                </div>
+
+                <div class="field">
+                  <label for="settingsModel">Gemini model</label>
+                  <select id="settingsModel"></select>
+                  <div class="hint">Models are loaded from your Gemini API key.</div>
+                </div>
+
+                <div class="field">
+                  <label for="settingsTemperature">Temperature</label>
+                  <input id="settingsTemperature" type="number" min="0" max="2" step="0.1" value="0.7" />
+                  <div class="hint">0.0 exact to 2.0 creative.</div>
+                </div>
+
+                <div class="field">
+                  <label for="settingsMaxTokens">Max output tokens</label>
+                  <input id="settingsMaxTokens" type="number" min="128" step="64" value="1024" />
+                  <div class="hint">Response length limit.</div>
+                </div>
+
+                <div class="field">
+                  <label for="settingsThinkingBudget">Thinking budget</label>
+                  <input id="settingsThinkingBudget" type="number" min="0" step="128" placeholder="e.g. 2048" />
+                  <div class="hint">Optional token budget for reasoning models that support it.</div>
+                </div>
+
+                <div class="field full">
+                  <label>Credentials</label>
+                  <div class="inline-controls">
+                    <button id="changeCredentialsBtn" class="btn btn-secondary">Change credentials</button>
+                    <div class="hint">Changing credentials revalidates the Gemini API key and loads available models.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <!-- COMPOSER MODAL -->
+  <div id="composerModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-panel">
+      <h3>Review and send</h3>
+      <p class="muted" style="margin: 8px 0 16px;">
+        This sends through the real Gmail API after you approve.
+      </p>
+
+      <div id="composerWarnings"></div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="composerTo">To</label>
+          <input id="composerTo" type="text" />
+        </div>
+
+        <div class="field">
+          <label for="composerSubject">Subject</label>
+          <input id="composerTo" class="hidden" />
+          <input id="composerSubject" type="text" />
+        </div>
+
+        <div class="field full">
+          <label for="composerBody">Message</label>
+          <textarea id="composerBody" style="min-height:220px;"></textarea>
+        </div>
+
+        <div class="field full">
+          <label for="composerAttachments">Attachments</label>
+          <input id="composerAttachments" type="file" multiple />
+          <div id="composerAttachmentList" class="inline-controls" style="margin-top:10px;"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div></div>
+        <div class="modal-actions">
+          <button id="composerCancel" class="btn btn-secondary">Cancel</button>
+          <button id="composerSend" class="btn btn-primary">Approve & Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const state = {
+      credentials: {
+        oauthClientId: "",
+        geminiApiKey: ""
+      },
+
+      settings: {
+        model: "",
+        directives: "",
+        signature: "",
+        temperature: 0.7,
+        maxTokens: 1024,
+        thinkingBudget: ""
+      },
+
+      availableModels: [],
+      accessToken: null,
+      tokenExpiresAt: 0,
+      tokenClient: null,
+      signedIn: false,
+
+      emails: [],
+      selectedEmailId: null,
+      selectedEmailFull: null,
+      loadingInbox: false,
+
+      chat: [],
+      templates: []
+    };
+
+    let composerData = {
+      to: "",
+      subject: "",
+      body: "",
+      threadId: "",
+      inReplyTo: "",
+      references: ""
+    };
+
+    let composerAttachments = [];
+    let tokenResolver = null;
+    let tokenRejecter = null;
+
+    function init() {
+      bindEvents();
+      loadSettings();
+      loadTemplates();
+
+      const savedCredentials = localStorage.getItem("mailgent_credentials");
+      if (savedCredentials) {
+        try {
+          const parsed = JSON.parse(savedCredentials);
+          $("credentialOAuth").value = parsed.oauthClientId || "";
+          $("credentialGemini").value = parsed.geminiApiKey || "";
+        } catch (error) {
+          console.warn(error);
+        }
+      }
+
+      renderAll();
+      openCredentialsModal();
+    }
+
+    function bindEvents() {
+      $("credentialSubmit").addEventListener("click", saveCredentials);
+      $("credentialsBtn").addEventListener("click", openCredentialsModal);
+      $("changeCredentialsBtn").addEventListener("click", openCredentialsModal);
+      $("settingsBtn").addEventListener("click", () => switchView("settings"));
+      $("authBtn").addEventListener("click", onAuthClick);
+      $("reloadInboxBtn").addEventListener("click", loadInbox);
+      $("composeBtn").addEventListener("click", () => openComposer({}));
+      $("globalSearch").addEventListener("input", renderInbox);
+
+      document.querySelectorAll(".nav-item").forEach((btn) => {
+        btn.addEventListener("click", () => switchView(btn.dataset.view));
+      });
+
+      $("topbarModel").addEventListener("change", (event) => {
+        state.settings.model = event.target.value;
+        $("settingsModel").value = event.target.value;
+        localStorage.setItem("mailgent_settings", JSON.stringify(state.settings));
+        showToast("Model updated.", "success");
+      });
+
+      $("chatSendBtn").addEventListener("click", sendAssistant);
+      $("chatInput").addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          sendAssistant();
+        }
+      });
+
+      $("templateForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        addTemplate();
+      });
+
+      $("saveSettingsBtn").addEventListener("click", saveSettings);
+
+      $("composerCancel").addEventListener("click", closeComposer);
+      $("composerSend").addEventListener("click", sendComposer);
+
+      $("composerAttachments").addEventListener("change", onComposerFilesSelected);
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !$("credentialsModal").classList.contains("hidden")) {
+          event.preventDefault();
+        }
+      });
+    }
+
+    function renderAll() {
+      renderModelSelects();
+      renderAuthState();
+      renderInbox();
+      renderEmailDetail();
+      renderAssistantContext();
+      renderTemplates();
+      renderSettings();
+
+      if (!$("chatMessages").children.length) {
+        addChatMessage(
+          "assistant",
+          "Mailgent is ready. Ask it to draft, summarize, or prepare a reply. For email-specific replies, select an email in Inbox and keep context enabled.",
+          false
+        );
+      }
+    }
+
+    /* Credentials */
+
+    function openCredentialsModal() {
+      $("credentialError").classList.add("hidden");
+      $("credentialsModal").classList.remove("hidden");
+    }
+
+    function closeCredentialsModal() {
+      $("credentialsModal").classList.add("hidden");
+      $("appView").classList.remove("hidden");
+    }
+
+    function showCredentialError(message) {
+      const el = $("credentialError");
+      el.textContent = message;
+      el.classList.remove("hidden");
+    }
+
+    async function saveCredentials() {
+      const oauthClientId = $("credentialOAuth").value.trim();
+      const geminiApiKey = $("credentialGemini").value.trim();
+      const btn = $("credentialSubmit");
+
+      $("credentialError").classList.add("hidden");
+
+      if (!oauthClientId.endsWith(".apps.googleusercontent.com")) {
+        showCredentialError("Google OAuth Client ID must end with .apps.googleusercontent.com.");
+        return;
+      }
+
+      if (!geminiApiKey) {
+        showCredentialError("Enter a Gemini API key.");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Validating...";
+
+      try {
+        const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(geminiApiKey)}`;
+        const res = await fetch(modelsUrl);
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data.error?.message || `Gemini API key validation failed with status ${res.status}.`);
+        }
+
+        state.availableModels = (data.models || [])
+          .filter((model) => model.supportedGenerationMethods?.includes("generateContent"))
+          .map((model) => model.name.replace(/^models\//, ""));
+
+        if (!state.availableModels.length) {
+          throw new Error("No usable Gemini models were found for this API key.");
+        }
+
+        await loadGsi();
+
+        state.credentials.oauthClientId = oauthClientId;
+        state.credentials.geminiApiKey = geminiApiKey;
+
+        localStorage.setItem("mailgent_credentials", JSON.stringify(state.credentials));
+
+        ensureModelSelection();
+        localStorage.setItem("mailgent_settings", JSON.stringify(state.settings));
+
+        renderAll();
+        closeCredentialsModal();
+        showToast("Credentials validated. Connect Gmail to load your inbox.", "success");
+      } catch (error) {
+        showCredentialError(error.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Validate & Continue";
+      }
+    }
+
+    function ensureModelSelection() {
+      const models = state.availableModels;
+
+      if (!models.length) {
+        throw new Error("No Gemini models available.");
+      }
+
+      if (state.settings.model && models.includes(state.settings.model)) {
+        return;
+      }
+
+      const preferred = [
+        "gemini-2.5-flash",
+        "gemini-3-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash"
+      ];
+
+      for (const preferredModel of preferred) {
+        const found = models.find((model) => model.includes(preferredModel));
+        if (found) {
+          state.settings.model = found;
+          return;
+        }
+      }
+
+      const flashModel = models.find((model) => model.includes("flash"));
+      state.settings.model = flashModel || models[0];
+    }
+
+    /* Google Identity Services + Gmail auth */
+
+    function loadGsi() {
+      return new Promise((resolve, reject) => {
+        if (window.google?.accounts?.oauth2) {
+          resolve();
+          return;
+        }
+
+        const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+        if (existing) {
+          existing.addEventListener("load", resolve, { once: true });
+          existing.addEventListener("error", () => reject(new Error("Failed to load Google Identity Services.")), { once: true });
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error("Failed to load Google Identity Services."));
+        document.head.appendChild(script);
+      });
+    }
+
+    function initTokenClient() {
+      if (state.tokenClient || !window.google?.accounts?.oauth2) {
+        return;
+      }
+
+      state.tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: state.credentials.oauthClientId,
+        scope: "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send",
+        callback: (response) => {
+          if (response.error) {
+            const error = new Error(response.error_description || response.error || "Google OAuth failed.");
+            if (tokenRejecter) tokenRejecter(error);
+          } else {
+            state.accessToken = response.access_token;
+            state.tokenExpiresAt = Date.now() + ((Number(response.expires_in) || 3600) - 60) * 1000;
+            if (tokenResolver) tokenResolver(response.access_token);
+          }
+
+          tokenResolver = null;
+          tokenRejecter = null;
+        }
+      });
+    }
+
+    async function getAccessToken(force = false) {
+      if (!state.credentials.oauthClientId) {
+        throw new Error("Google OAuth Client ID is required.");
+      }
+
+      if (!force && state.accessToken && Date.now() < state.tokenExpiresAt) {
+        return state.accessToken;
+      }
+
+      await loadGsi();
+      initTokenClient();
+
+      return new Promise((resolve, reject) => {
+        tokenResolver = resolve;
+        tokenRejecter = reject;
+        state.tokenClient.requestAccessToken({ prompt: "" });
+      });
+    }
+
+    async function onAuthClick() {
+      if (state.signedIn) {
+        signOut();
+        return;
+      }
+
+      const btn = $("authBtn");
+
+      try {
+        btn.disabled = true;
+        btn.textContent = "Connecting...";
+
+        await getAccessToken(true);
+        state.signedIn = true;
+
+        renderAuthState();
+        showToast("Gmail connected.", "success");
+        await loadInbox();
+      } catch (error) {
+        showToast(`Google sign-in failed: ${error.message}`, "error");
+
+        if (/invalid|client_id|unauthorized/i.test(error.message)) {
+          openCredentialsModal();
+          showCredentialError("Google OAuth Client ID appears invalid or not authorized for this origin. Verify it in Google Cloud Console.");
+        }
+      } finally {
+        btn.disabled = false;
+        renderAuthState();
+      }
+    }
+
+    function signOut() {
+      state.accessToken = null;
+      state.tokenExpiresAt = 0;
+      state.signedIn = false;
+      state.emails = [];
+      state.selectedEmailId = null;
+      state.selectedEmailFull = null;
+
+      renderAll();
+      showToast("Signed out from Gmail.", "warning");
+    }
+
+    function renderAuthState() {
+      const btn = $("authBtn");
+
+      if (state.signedIn) {
+        btn.textContent = "Sign out";
+        btn.classList.remove("btn-primary");
+        btn.classList.add("btn-secondary");
+      } else {
+        btn.textContent = "Connect Gmail";
+        btn.classList.add("btn-primary");
+        btn.classList.remove("btn-secondary");
+      }
+    }
+
+    /* Gmail API */
+
+    async function gmailFetch(path, options = {}, retry = true) {
+      const token = await getAccessToken();
+
+      const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me${path}`, {
+        method: options.method || "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          ...(options.headers || {})
+        },
+        body: options.body || undefined
+      });
+
+      if (response.status === 401 && retry) {
+        state.accessToken = null;
+        return gmailFetch(path, options, false);
+      }
+
+      if (!response.ok) {
+        let message = `Gmail API error ${response.status}`;
+        try {
+          const data = await response.json();
+          message = data.error?.message || message;
+        } catch (error) {
+          // Ignore JSON parse failure.
+        }
+        throw new Error(message);
+      }
+
+      if (response.status === 204) {
+        return null;
+      }
+
+      return response.json();
+    }
+
+    async function loadInbox() {
+      if (!state.signedIn) {
+        showToast("Connect Gmail first.", "warning");
+        return;
+      }
+
+      state.loadingInbox = true;
+      renderInbox();
+
+      try {
+        const list = await gmailFetch("/messages?maxResults=25&q=is:inbox");
+        const messages = list.messages || [];
+
+        const details = await Promise.all(
+          messages.map((message) =>
+            gmailFetch(
+              `/messages/${message.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date&metadataHeaders=Message-ID`
+            ).catch((error) => {
+              console.warn(error);
+              return null;
+            })
+          )
+        );
+
+        state.emails = details.filter(Boolean).map(parseMetaMessage);
+        renderInbox();
+
+        if (state.emails.length) {
+          const currentStillExists = state.selectedEmailId && state.emails.some((email) => email.id === state.selectedEmailId);
+          await selectEmail(currentStillExists ? state.selectedEmailId : state.emails[0].id);
+        } else {
+          state.selectedEmailId = null;
+          state.selectedEmailFull = null;
+          renderEmailDetail();
+        }
+      } catch (error) {
+        showToast(error.message, "error");
+      } finally {
+        state.loadingInbox = false;
+        renderInbox();
+      }
+    }
+
+    function parseMetaMessage(message) {
+      const headers = message.payload?.headers || [];
+
+      return {
+        id: message.id,
+        threadId: message.threadId,
+        labelIds: message.labelIds || [],
+        snippet: message.snippet || "",
+        subject: getHeader(headers, "Subject") || "(no subject)",
+        from: getHeader(headers, "From") || "Unknown sender",
+        date: getHeader(headers, "Date") || formatInternalDate(message.internalDate),
+        messageId: getHeader(headers, "Message-ID") || ""
+      };
+    }
+
+    function formatInternalDate(internalDate) {
+      if (!internalDate) return "";
+      const date = new Date(Number(internalDate));
+      return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
+    }
+
+    function getHeader(headers, name) {
+      const header = (headers || []).find((item) => item.name.toLowerCase() === name.toLowerCase());
+      return header?.value || "";
+    }
+
+    async function selectEmail(id) {
+      state.selectedEmailId = id;
+      state.selectedEmailFull = null;
+
+      renderInbox();
+      renderAssistantContext();
+      renderEmailDetailLoading();
+
+      try {
+        const full = await gmailFetch(`/messages/${id}?format=full`);
+        state.selectedEmailFull = parseFullMessage(full);
+        renderEmailDetail();
+        renderAssistantContext();
+      } catch (error) {
+        $("emailDetail").innerHTML = `<div class="error-box">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    function parseFullMessage(message) {
+      const meta = parseMetaMessage(message);
+
+      const plainData = findBodyData(message.payload, "text/plain");
+      const htmlData = findBodyData(message.payload, "text/html");
+
+      let body = "";
+
+      if (plainData) {
+        body = decodeBase64UrlToString(plainData);
+      } else if (htmlData) {
+        body = htmlToText(decodeBase64UrlToString(htmlData));
+      }
+
+      const attachments = collectAttachments(message.payload);
+
+      return {
+        ...meta,
+        body,
+        attachments
+      };
+    }
+
+    function findBodyData(payload, mimeType) {
+      if (!payload) return "";
+
+      if (payload.mimeType === mimeType && payload.body?.data) {
+        return payload.body.data;
+      }
+
+      if (payload.parts) {
+        for (const part of payload.parts) {
+          const found = findBodyData(part, mimeType);
+          if (found) return found;
+        }
+      }
+
+      return "";
+    }
+
+    function collectAttachments(payload, attachments = []) {
+      if (!payload) return attachments;
+
+      if (payload.filename && payload.filename.length) {
+        attachments.push({
+          filename: payload.filename,
+          mimeType: payload.mimeType || "application/octet-stream",
+          size: payload.body?.size || 0,
+          attachmentId: payload.body?.attachmentId || ""
+        });
+      }
+
+      if (payload.parts) {
+        payload.parts.forEach((part) => collectAttachments(part, attachments));
+      }
+
+      return attachments;
+    }
+
+    function htmlToText(html) {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      doc.querySelectorAll("script,style,noscript,meta,link").forEach((node) => node.remove());
+      return doc.body?.innerText || doc.body?.textContent || "";
+    }
+
+    /* UI rendering */
+
+    function switchView(view) {
+      state.currentView = view;
+
+      document.querySelectorAll(".nav-item").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.view === view);
+      });
+
+      ["inbox", "assistant", "templates", "settings"].forEach((name) => {
+        $(`view-${name}`).classList.toggle("hidden", name !== view);
+      });
+
+      if (view === "assistant") renderAssistantContext();
+      if (view === "templates") renderTemplates();
+      if (view === "settings") renderSettings();
+    }
+
+    function renderInbox() {
+      const listEl = $("emailList");
+
+      if (!state.signedIn) {
+        listEl.innerHTML = `
+          <div class="empty-state">
+            <h3>Gmail not connected</h3>
+            <p>Connect Gmail to load your real inbox.</p>
+            <button class="btn btn-primary" onclick="onAuthClick()">Connect Gmail</button>
+          </div>
+        `;
+
+        $("emailDetail").innerHTML = `
+          <div class="empty-state">
+            <h3>No email selected</h3>
+            <p>Connect Gmail and select a message.</p>
+          </div>
+        `;
+        return;
+      }
+
+      if (state.loadingInbox) {
+        listEl.innerHTML = `
+          <div class="empty-state">
+            <h3>Loading inbox...</h3>
+            <p>Fetching real Gmail messages.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const query = $("globalSearch").value.toLowerCase().trim();
+
+      const emails = state.emails.filter((email) => {
+        if (!query) return true;
+
+        return (
+          email.from.toLowerCase().includes(query) ||
+          email.subject.toLowerCase().includes(query) ||
+          email.snippet.toLowerCase().includes(query)
+        );
+      });
+
+      if (!emails.length) {
+        listEl.innerHTML = `
+          <div class="empty-state">
+            <h3>No messages found</h3>
+            <p>${state.emails.length ? "No search results." : "No inbox messages were returned by Gmail."}</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = emails.map((email) => {
+        const selected = email.id === state.selectedEmailId;
+        const unread = email.labelIds.includes("UNREAD");
+
+        return `
+          <button class="email-item ${selected ? "selected" : ""}" onclick="selectEmail('${email.id}')">
+            <div class="email-item-top">
+              <div class="sender">${escapeHtml(email.from)}</div>
+              <div class="muted small">${escapeHtml(email.date)}</div>
+            </div>
+            <div class="subject">${escapeHtml(email.subject)}</div>
+            <div class="summary">${escapeHtml(email.snippet)}</div>
+            <div class="badges">
+              ${unread ? '<span class="badge blue">Unread</span>' : ""}
+              ${email.labelIds.includes("IMPORTANT") ? '<span class="badge amber">Important</span>' : ""}
+            </div>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function renderEmailDetailLoading() {
+      $("emailDetail").innerHTML = `
+        <div class="empty-state">
+          <h3>Loading email...</h3>
+          <p>Fetching full message from Gmail.</p>
+        </div>
+      `;
+    }
+
+    function renderEmailDetail() {
+      const email = state.selectedEmailFull;
+      const detail = $("emailDetail");
+
+      if (!email) {
+        detail.innerHTML = `
+          <div class="empty-state">
+            <h3>No email selected</h3>
+            <p>Select an email from the list to view it and draft a reply.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const missingAttachment = /attach/i.test(email.body) && email.attachments.length === 0;
+
+      detail.innerHTML = `
+        <div class="detail-header">
+          <div class="email-item-top">
+            <h3>${escapeHtml(email.subject)}</h3>
+            <div class="muted small">${escapeHtml(email.date)}</div>
+          </div>
+          <div class="muted" style="margin-top:6px;">From ${escapeHtml(email.from)}</div>
+        </div>
+
+        ${missingAttachment ? `<div class="warning-box">This email says “attached,” but no attachment was detected.</div>` : ""}
+
+        <div class="detail-meta">
+          <div class="meta-box">
+            <h4>Thread IDs</h4>
+            <div class="muted small" style="margin-top:6px;">Thread: ${escapeHtml(email.threadId)}</div>
+            <div class="muted small" style="margin-top:4px;">Message: ${escapeHtml(email.messageId || "Not found")}</div>
+          </div>
+
+          <div class="meta-box">
+            <h4>Available actions</h4>
+            <div class="muted small" style="margin-top:6px;">
+              Draft with Gemini, reply manually, compose to sender, and send through Gmail.
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Email body</div>
+        <div class="meta-box">
+          <pre class="pre-body">${escapeHtml(email.body || "No body content found.")}</pre>
+        </div>
+
+        <div class="section-title">Attachments</div>
+        ${
+          email.attachments.length
+            ? email.attachments.map((attachment) => `
+              <div class="attachment-card">
+                <div class="strong">${escapeHtml(attachment.filename)}</div>
+                <div class="muted small" style="margin-top:4px;">
+                  ${escapeHtml(attachment.mimeType)} · ${formatBytes(attachment.size)}
+                </div>
+              </div>
+            `).join("")
+            : `<div class="meta-box">No attachments detected.</div>`
+        }
+
+        <div class="action-row">
+          <button class="btn btn-primary" onclick="generateAIReply(this)">Draft AI reply</button>
+          <button class="btn btn-secondary" onclick="replyWithoutAI()">Reply manually</button>
+          <button class="btn btn-secondary" onclick="composeToSelected()">Compose to sender</button>
+        </div>
+      `;
+    }
+
+    function renderAssistantContext() {
+      const el = $("assistantContext");
+      if (!el) return;
+
+      const email = state.selectedEmailFull;
+
+      if (!email) {
+        el.innerHTML = `
+          <div class="meta-box">
+            <h4>Selected thread</h4>
+            <div class="muted" style="margin-top:6px;">No email selected.</div>
+          </div>
+
+          <div class="meta-box" style="margin-top:12px;">
+            <h4>Available context</h4>
+            <ul class="context-list">
+              <li>Custom directives</li>
+              <li>Signature</li>
+              <li>Selected model</li>
+            </ul>
+          </div>
+        `;
+        return;
+      }
+
+      el.innerHTML = `
+        <div class="meta-box">
+          <h4>Selected thread</h4>
+          <div style="margin-top:6px;">${escapeHtml(email.subject)}</div>
+          <div class="muted small" style="margin-top:4px;">${escapeHtml(email.from)}</div>
+        </div>
+
+        <div class="meta-box" style="margin-top:12px;">
+          <h4>Context used when enabled</h4>
+          <ul class="context-list">
+            <li>Current email body</li>
+            <li>From, subject, and date</li>
+            <li>Custom directives</li>
+            <li>Signature</li>
+            ${email.attachments.length ? "<li>Attachment names</li>" : ""}
+          </ul>
+        </div>
+
+        <div class="meta-box" style="margin-top:12px;">
+          <h4>Current model</h4>
+          <div style="margin-top:6px;">${escapeHtml(modelLabel(state.settings.model))}</div>
+        </div>
+      `;
+    }
+
+    /* Gemini */
+
+    function buildSystemInstruction() {
+      const signatureText = signatureToText(state.settings.signature).trim();
+
+      return [
+        "You are Mailgent, a professional AI email agent.",
+        "Draft clear, professional email content only unless the user asks for analysis.",
+        "When drafting an email body, return only the email body. Do not include Subject:, To:, metadata, markdown, or explanations.",
+        state.settings.directives ? `User directives:\n${state.settings.directives}` : "",
+        signatureText ? `The user's signature is:\n${signatureText}\nDo not repeat the signature unless asked.` : ""
+      ].filter(Boolean).join("\n\n");
+    }
+
+    async function callGemini(prompt, history = []) {
+      if (!state.credentials.geminiApiKey) {
+        throw new Error("Gemini API key is required.");
+      }
+
+      if (!state.settings.model) {
+        throw new Error("Choose a Gemini model.");
+      }
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(state.settings.model)}:generateContent?key=${encodeURIComponent(state.credentials.geminiApiKey)}`;
+
+      const contents = history.map((item) => ({
+        role: item.role === "user" ? "user" : "model",
+        parts: [{ text: item.text }]
+      }));
+
+      contents.push({
+        role: "user",
+        parts: [{ text: prompt }]
+      });
+
+      const payload = {
+        contents,
+        systemInstruction: {
+          parts: [{ text: buildSystemInstruction() }]
+        },
+        generationConfig: {
+          temperature: Number(state.settings.temperature || 0.7),
+          maxOutputTokens: Number(state.settings.maxTokens || 1024)
+        }
+      };
+
+      const thinkingBudget = Number(state.settings.thinkingBudget);
+      if (Number.isFinite(thinkingBudget) && thinkingBudget > 0) {
+        payload.generationConfig.thinkingConfig = {
+          thinkingBudget
+        };
+      }
+
+      async function post(body) {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body)
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error?.message || `Gemini API error ${response.status}.`);
+        }
+
+        return data;
+      }
+
+      const payloadWithTools = {
+        ...payload,
+        tools: [
+          { google_search: {} },
+          { url_context: {} }
+        ]
+      };
+
+      try {
+        return await post(payloadWithTools);
+      } catch (toolsError) {
+        try {
+          return await post(payload);
+        } catch (baseError) {
+          if (payload.generationConfig?.thinkingConfig) {
+            const payloadWithoutThinking = {
+              ...payload,
+              generationConfig: {
+                temperature: payload.generationConfig.temperature,
+                maxOutputTokens: payload.generationConfig.maxOutputTokens
+              }
+            };
+
+            return await post(payloadWithoutThinking);
+          }
+
+          throw baseError;
+        }
+      }
+    }
+
+    function extractGeminiText(data) {
+      return data?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "No response returned.";
+    }
+
+    async function generateAIReply(button) {
+      const email = state.selectedEmailFull;
+
+      if (!email) {
+        showToast("Select an email first.", "warning");
+        return;
+      }
+
+      const originalText = button.textContent;
+
+      try {
+        button.disabled = true;
+        button.textContent = "Drafting...";
+
+        const prompt = buildReplyPrompt(email);
+        const response = await callGemini(prompt, []);
+        let body = extractGeminiText(response);
+
+        body = cleanEmailBody(body);
+        body = appendSignature(body);
+
+        openComposer({
+          to: email.from,
+          subject: ensureRe(email.subject),
+          body,
+          threadId: email.threadId,
+          inReplyTo: email.messageId,
+          references: email.messageId
+        });
+      } catch (error) {
+        showToast(error.message, "error");
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    function buildReplyPrompt(email) {
+      const attachmentNames = email.attachments.length
+        ? email.attachments.map((attachment) => attachment.filename).join(", ")
+        : "None";
+
+      return `Draft a professional reply to this email.
+
+From: ${email.from}
+Subject: ${email.subject}
+Date: ${email.date}
+Attachments: ${attachmentNames}
+
+Email body:
+${email.body.slice(0, 12000)}
+
+Rules:
+- Return only the email body.
+- Do not include Subject:, To:, metadata, markdown, or explanations.
+- Do not add a signature.
+- Be concise, professional, and actionable.
+`;
+    }
+
+    async function sendAssistant() {
+      const input = $("chatInput");
+      const text = input.value.trim();
+
+      if (!text) return;
+
+      addChatMessage("user", text, false);
+      state.chat.push({ role: "user", text });
+      input.value = "";
+
+      const loading = addChatMessage("assistant", "Thinking...", false);
+
+      try {
+        const prompt = buildAssistantPrompt(text);
+        const history = state.chat.slice(0, -1);
+
+        const response = await callGemini(prompt, history);
+        const reply = extractGeminiText(response);
+
+        state.chat.push({ role: "model", text: reply });
+
+        loading.remove();
+        addChatMessage("assistant", reply, true);
+      } catch (error) {
+        loading.remove();
+        addChatMessage("assistant", `Error: ${error.message}`, false);
+      }
+    }
+
+    function buildAssistantPrompt(text) {
+      const useContext = $("assistantUseContext").checked;
+      const email = state.selectedEmailFull;
+
+      if (useContext && email) {
+        return `Use this selected email as context.
+
+From: ${email.from}
+Subject: ${email.subject}
+Date: ${email.date}
+Attachments: ${email.attachments.map((attachment) => attachment.filename).join(", ") || "None"}
+
+Email body:
+${email.body.slice(0, 10000)}
+
+User request:
+${text}
+`;
+      }
+
+      return text;
+    }
+
+    function addChatMessage(role, text, addAction) {
+      const container = $("chatMessages");
+      const div = document.createElement("div");
+      div.className = `chat-message ${role}`;
+      div.textContent = text;
+
+      if (role === "assistant" && addAction) {
+        const actions = document.createElement("div");
+        actions.className = "chat-actions";
+
+        const useButton = document.createElement("button");
+        useButton.className = "btn btn-primary btn-sm";
+        useButton.textContent = "Use as email body";
+        useButton.addEventListener("click", () => useAssistantText(text));
+
+        actions.appendChild(useButton);
+        div.appendChild(actions);
+      }
+
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+      return div;
+    }
+
+    function useAssistantText(text) {
+      const email = state.selectedEmailFull;
+      const body = appendSignature(cleanEmailBody(text));
+
+      openComposer({
+        to: email ? email.from : "",
+        subject: email ? ensureRe(email.subject) : "",
+        body,
+        threadId: email ? email.threadId : "",
+        inReplyTo: email ? email.messageId : "",
+        references: email ? email.messageId : ""
+      });
+    }
+
+    /* Composer and sending */
+
+    function replyWithoutAI() {
+      const email = state.selectedEmailFull;
+      if (!email) return;
+
+      const firstName = firstNameFrom(email.from);
+
+      openComposer({
+        to: email.from,
+        subject: ensureRe(email.subject),
+        body: `Hi ${firstName},\n\n`,
+        threadId: email.threadId,
+        inReplyTo: email.messageId,
+        references: email.messageId
+      });
+    }
+
+    function composeToSelected() {
+      const email = state.selectedEmailFull;
+
+      openComposer({
+        to: email ? email.from : "",
+        subject: "",
+        body: "",
+        threadId: email ? email.threadId : "",
+        inReplyTo: "",
+        references: ""
+      });
+    }
+
+    function openComposer(data) {
+      composerData = {
+        to: data.to || "",
+        subject: data.subject || "",
+        body: data.body || "",
+        threadId: data.threadId || "",
+        inReplyTo: data.inReplyTo || "",
+        references: data.references || ""
+      };
+
+      composerAttachments = [];
+
+      $("composerTo").value = composerData.to;
+      $("composerSubject").value = composerData.subject;
+      $("composerBody").value = composerData.body;
+      $("composerAttachments").value = "";
+
+      renderComposerAttachments();
+      updateComposerWarnings();
+
+      $("composerModal").classList.remove("hidden");
+    }
+
+    function closeComposer() {
+      $("composerModal").classList.add("hidden");
+    }
+
+    function updateComposerWarnings() {
+      const warnings = [];
+      const body = $("composerBody").value;
+
+      if (/attach/i.test(body) && composerAttachments.length === 0) {
+        warnings.push("Your message says “attached,” but no attachment is added.");
+      }
+
+      const email = state.selectedEmailFull;
+      if (email && composerData.threadId === email.threadId && /attach/i.test(email.body) && email.attachments.length === 0) {
+        warnings.push("The selected email says “attached,” but no attachment was detected in Gmail.");
+      }
+
+      $("composerWarnings").innerHTML = warnings.length
+        ? `<div class="warning-box">${warnings.map((warning) => `<div>• ${escapeHtml(warning)}</div>`).join("")}</div>`
+        : "";
+    }
+
+    $("composerBody")?.addEventListener("input", updateComposerWarnings);
+
+    async function onComposerFilesSelected(event) {
+      const files = Array.from(event.target.files || []);
+
+      for (const file of files) {
+        if (file.size > 10 * 1024 * 1024) {
+          showToast(`${file.name} is over 10 MB and was skipped.`, "warning");
+          continue;
+        }
+
+        const buffer = await file.arrayBuffer();
+        const base64 = arrayBufferToBase64(buffer);
+
+        composerAttachments.push({
+          filename: file.name,
+          mimeType: file.type || "application/octet-stream",
+          data: chunkBase64(base64)
+        });
+      }
+
+      event.target.value = "";
+      renderComposerAttachments();
+      updateComposerWarnings();
+    }
+
+    function renderComposerAttachments() {
+      const container = $("composerAttachmentList");
+
+      if (!composerAttachments.length) {
+        container.innerHTML = `<span class="muted small">No attachments added.</span>`;
+        return;
+      }
+
+      container.innerHTML = composerAttachments.map((attachment, index) => `
+        <span class="attachment-chip">
+          ${escapeHtml(attachment.filename)}
+          <button onclick="removeComposerAttachment(${index})" title="Remove">×</button>
+        </span>
+      `).join("");
+    }
+
+    function removeComposerAttachment(index) {
+      composerAttachments.splice(index, 1);
+      renderComposerAttachments();
+      updateComposerWarnings();
+    }
+
+    async function sendComposer() {
+      composerData.to = $("composerTo").value.trim();
+      composerData.subject = $("composerSubject").value.trim();
+      composerData.body = $("composerBody").value;
+
+      if (!composerData.to) {
+        showToast("Recipient is required.", "error");
+        return;
+      }
+
+      if (!composerData.body.trim()) {
+        showToast("Message body is required.", "error");
+        return;
+      }
+
+      const button = $("composerSend");
+      const originalText = button.textContent;
+
+      try {
+        button.disabled = true;
+        button.textContent = "Sending...";
+
+        const raw = createRawMessage(composerData, composerAttachments);
+        const encodedRaw = encodeBase64UrlFromString(raw);
+
+        const payload = {
+          raw: encodedRaw
+        };
+
+        if (composerData.threadId) {
+          payload.threadId = composerData.threadId;
+        }
+
+        await gmailFetch("/messages/send", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        closeComposer();
+        showToast("Email sent through Gmail.", "success");
+
+        if (state.signedIn) {
+          await loadInbox();
+        }
+      } catch (error) {
+        showToast(error.message, "error");
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    function createRawMessage(data, attachments) {
+      const boundary = `mailgent_${Math.random().toString(36).slice(2)}`;
+      const subjectEncoded = encodeHeaderValue(data.subject || "(no subject)");
+
+      const headers = [
+        `To: ${data.to}`,
+        `Subject: ${subjectEncoded}`,
+        "MIME-Version: 1.0"
+      ];
+
+      if (data.inReplyTo) {
+        headers.push(`In-Reply-To: ${data.inReplyTo}`);
+      }
+
+      if (data.references) {
+        headers.push(`References: ${data.references}`);
+      }
+
+      if (!attachments.length) {
+        headers.push("Content-Type: text/plain; charset=UTF-8");
+        headers.push("Content-Transfer-Encoding: base64");
+
+        return `${headers.join("\r\n")}\r\n\r\n${encodeBase64StandardFromString(data.body)}`;
+      }
+
+      headers.push(`Content-Type: multipart/mixed; boundary="${boundary}"`);
+
+      let mime = `${headers.join("\r\n")}\r\n\r\n`;
+
+      mime += `--${boundary}\r\n`;
+      mime += `Content-Type: text/plain; charset=UTF-8\r\n`;
+      mime += `Content-Transfer-Encoding: base64\r\n\r\n`;
+      mime += `${encodeBase64StandardFromString(data.body)}\r\n`;
+
+      for (const attachment of attachments) {
+        mime += `--${boundary}\r\n`;
+        mime += `Content-Type: ${attachment.mimeType}\r\n`;
+        mime += `Content-Transfer-Encoding: base64\r\n`;
+        mime += `Content-Disposition: attachment; filename="${attachment.filename}"\r\n\r\n`;
+        mime += `${attachment.data}\r\n`;
+      }
+
+      mime += `--${boundary}--`;
+
+      return mime;
+    }
+
+    /* Templates */
+
+    function loadTemplates() {
+      try {
+        state.templates = JSON.parse(localStorage.getItem("mailgent_templates") || "[]");
+      } catch (error) {
+        state.templates = [];
+      }
+    }
+
+    function saveTemplates() {
+      localStorage.setItem("mailgent_templates", JSON.stringify(state.templates));
+    }
+
+    function addTemplate() {
+      const title = $("templateTitle").value.trim();
+      const category = $("templateCategory").value.trim();
+      const body = $("templateBody").value.trim();
+
+      if (!title || !body) {
+        showToast("Template title and body are required.", "error");
+        return;
+      }
+
+      state.templates.unshift({
+        id: String(Date.now()),
+        title,
+        category,
+        body
+      });
+
+      saveTemplates();
+      renderTemplates();
+      $("templateForm").reset();
+      showToast("Template saved.", "success");
+    }
+
+    function renderTemplates() {
+      const grid = $("templateGrid");
+
+      if (!state.templates.length) {
+        grid.innerHTML = `
+          <div class="card empty-state" style="grid-column:1/-1;">
+            <h3>No templates yet</h3>
+            <p>Create your first reusable template above.</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = state.templates.map((template) => `
+        <div class="card template-card">
+          <div class="email-item-top">
+            <div class="strong">${escapeHtml(template.title)}</div>
+            <span class="badge blue">${escapeHtml(template.category || "General")}</span>
+          </div>
+
+          <div class="template-body">${escapeHtml(template.body)}</div>
+
+          <div class="action-row" style="margin-top:auto;">
+            <button class="btn btn-primary btn-sm" onclick="useTemplate('${template.id}')">Use</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteTemplate('${template.id}')">Delete</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function useTemplate(templateId) {
+      const template = state.templates.find((item) => item.id === templateId);
+      if (!template) return;
+
+      const email = state.selectedEmailFull;
+      const body = fillTemplateVariables(template.body);
+
+      openComposer({
+        to: email ? email.from : "",
+        subject: email ? ensureRe(email.subject) : template.title,
+        body: appendSignature(body),
+        threadId: email ? email.threadId : "",
+        inReplyTo: email ? email.messageId : "",
+        references: email ? email.messageId : ""
+      });
+    }
+
+    function deleteTemplate(templateId) {
+      state.templates = state.templates.filter((template) => template.id !== templateId);
+      saveTemplates();
+      renderTemplates();
+      showToast("Template deleted.", "warning");
+    }
+
+    function fillTemplateVariables(text) {
+      const email = state.selectedEmailFull;
+
+      return text
+        .replaceAll("{{first_name}}", email ? firstNameFrom(email.from) : "there")
+        .replaceAll("{{subject}}", email ? email.subject : "your message");
+    }
+
+    /* Settings */
+
+    function loadSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem("mailgent_settings") || "null");
+        if (saved) {
+          state.settings = {
+            ...state.settings,
+            ...saved
+          };
+        }
+      } catch (error) {
+        console.warn(error);
+      }
+    }
+
+    function renderSettings() {
+      $("settingsDirectives").value = state.settings.directives || "";
+      $("settingsSignature").value = state.settings.signature || "";
+      $("settingsTemperature").value = state.settings.temperature ?? 0.7;
+      $("settingsMaxTokens").value = state.settings.maxTokens ?? 1024;
+      $("settingsThinkingBudget").value = state.settings.thinkingBudget || "";
+      $("settingsModel").value = state.settings.model || "";
+    }
+
+    function saveSettings() {
+      state.settings.directives = $("settingsDirectives").value.trim();
+      state.settings.signature = $("settingsSignature").value.trim();
+      state.settings.temperature = Number($("settingsTemperature").value || 0.7);
+      state.settings.maxTokens = Number($("settingsMaxTokens").value || 1024);
+      state.settings.thinkingBudget = $("settingsThinkingBudget").value.trim();
+      state.settings.model = $("settingsModel").value || state.settings.model;
+
+      localStorage.setItem("mailgent_settings", JSON.stringify(state.settings));
+      renderModelSelects();
+      renderAssistantContext();
+
+      showToast("Settings saved.", "success");
+    }
+
+    function renderModelSelects() {
+      const selects = [$("topbarModel"), $("settingsModel")];
+      const models = state.availableModels.length ? state.availableModels : (state.settings.model ? [state.settings.model] : []);
+
+      selects.forEach((select) => {
+        if (!select) return;
+
+        select.innerHTML = "";
+
+        models.forEach((model) => {
+          const option = document.createElement("option");
+          option.value = model;
+          option.textContent = modelLabel(model);
+          select.appendChild(option);
+        });
+
+        if (state.settings.model && !models.includes(state.settings.model)) {
+          const option = document.createElement("option");
+          option.value = state.settings.model;
+          option.textContent = modelLabel(state.settings.model);
+          select.appendChild(option);
+        }
+
+        select.value = state.settings.model;
+      });
+    }
+
+    function modelLabel(model) {
+      if (!model) return "No model selected";
+      if (model.includes("gemini-2.5-flash")) return "Gemini 2.5 Flash";
+      if (model.includes("gemini-3-flash")) return "Gemini 3 Flash";
+      return model;
+    }
+
+    /* Encoding and parsing utilities */
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text ?? "";
+      return div.innerHTML;
+    }
+
+    function decodeBase64UrlToString(input) {
+      try {
+        const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+        const binary = atob(padded);
+        const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+        return new TextDecoder("utf-8").decode(bytes);
+      } catch (error) {
+        console.warn(error);
+        return "";
+      }
+    }
+
+    function encodeBase64UrlFromString(text) {
+      const bytes = new TextEncoder().encode(text);
+      const binary = bytesToBinary(bytes);
+      return btoa(binary)
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+    }
+
+    function encodeBase64StandardFromString(text) {
+      const bytes = new TextEncoder().encode(text);
+      const binary = bytesToBinary(bytes);
+      return chunkBase64(btoa(binary));
+    }
+
+    function arrayBufferToBase64(buffer) {
+      const bytes = new Uint8Array(buffer);
+      const binary = bytesToBinary(bytes);
+      return btoa(binary);
+    }
+
+    function bytesToBinary(bytes) {
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return binary;
+    }
+
+    function chunkBase64(base64) {
+      return base64.match(/.{1,76}/g)?.join("\r\n") || "";
+    }
+
+    function encodeHeaderValue(value) {
+      const bytes = new TextEncoder().encode(value);
+      const binary = bytesToBinary(bytes);
+      return `=?UTF-8?B?${btoa(binary)}?=`;
+    }
+
+    function cleanEmailBody(text) {
+      return text
+        .replace(/```[a-z]*\n?|```/gi, "")
+        .replace(/^\s*(subject|to|cc|bcc)\s*:.*$/gim, "")
+        .trim();
+    }
+
+    function ensureRe(subject) {
+      if (!subject) return "";
+      return /^re:/i.test(subject) ? subject : `Re: ${subject}`;
+    }
+
+    function firstNameFrom(from) {
+      const name = from.split("<")[0].replace(/"/g, "").trim();
+      if (!name || name.includes("@")) return "there";
+      return name.split(" ")[0] || "there";
+    }
+
+    function signatureToText(signature) {
+      if (!signature) return "";
+
+      if (signature.includes("<")) {
+        const doc = new DOMParser().parseFromString(signature, "text/html");
+        doc.querySelectorAll("script,style,noscript,meta,link").forEach((node) => node.remove());
+        return doc.body?.innerText || doc.body?.textContent || "";
+      }
+
+      return signature;
+    }
+
+    function appendSignature(body) {
+      const signature = signatureToText(state.settings.signature).trim();
+      const cleanBody = (body || "").trim();
+
+      if (!signature) return cleanBody;
+      if (cleanBody.endsWith(signature)) return cleanBody;
+
+      return `${cleanBody}\n\n${signature}`;
+    }
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes) || bytes === 0) return "0 B";
+      const units = ["B", "KB", "MB", "GB"];
+      const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+      return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+    }
+
+    function showToast(message, type = "info") {
+      const toast = $("toast");
+      toast.textContent = message;
+      toast.className = `toast show ${type}`;
+      setTimeout(() => toast.classList.remove("show"), 3500);
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
